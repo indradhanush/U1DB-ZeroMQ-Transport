@@ -1,0 +1,9 @@
+*.py~
+*.pyc
+*.swp
+\#*
+.*
+*.*~
+venv/
+send_files/
+recv_files/
