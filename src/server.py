@@ -24,10 +24,21 @@ class Server():
         
         while True:
             sockets = dict(poll.poll())
-            if sockets.get(self.frontend):
+            # If there are incoming messages.
+            if sockets.get(self.frontend) == zmq.POLLIN:
                 connection_id = self.frontend.recv()
-                print connection_id
+                msg = self.frontend.recv()
+                print msg
                 # Send Some reply here.
+                import random
+                self.frontend.send(connection_id, zmq.SNDMORE)
+                self.frontend.send("Some Response %d" % (random.randint(1, 10)))
+
+    def tearDown(self):
+        self.frontend.close()
+        self.context.term()
+        self.frontend = None
+        self.context = None
 
 
 if __name__ == "__main__":
