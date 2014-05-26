@@ -3,14 +3,16 @@ import zmq
 
 # Local Imports
 import settings
+from keyvaluemsg import KeyValueMsg
 
 
 class ServerSocket(object):
     """
-    Base class for ockets at the server.
+    Base class for sockets at the server.
     """
     def __init__(self, socket, endpoint):
         self.socket = socket
+        self.socket.setsockopt(zmq.RCVTIMEO, 10)
         self.endpoint = endpoint
 
     def run(self):
@@ -44,6 +46,14 @@ class Publisher(ServerSocket):
     def run(self):
         super(Publisher, self).run()
 
+    def send(self, kvmsg):
+        """
+        Send updates via zmq.PUB socket.
+        :param kvmsg: KeyValueMsg instance.
+        """
+        assert(isinstance(kvmsg, KeyValueMsg))
+        self.socket.send_multipart([ kvmsg.key, kvmsg.body ])
+
 
 class Server(object):
     """
@@ -76,6 +86,13 @@ class Server(object):
                 self.router.socket.send(connection_id, zmq.SNDMORE)
                 self.router.socket.send("Random Response %d" %
                                         (random.randint(1, 100)))
+                print "Respone sent."
+            # else:
+                print "Now sending via PUB.."
+                # Should be converted to a poll to see application logic
+                # has any new updates or not.
+                kvmsg = KeyValueMsg(b"A", b"Hello World!")
+                self.pub.send(kvmsg)
 
     def tearDown(self):
         self.router.socket.close()
