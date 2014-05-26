@@ -12,7 +12,6 @@ class ServerSocket(object):
     """
     def __init__(self, socket, endpoint):
         self.socket = socket
-        self.socket.setsockopt(zmq.RCVTIMEO, 10)
         self.endpoint = endpoint
 
     def run(self):
@@ -27,6 +26,7 @@ class Router(ServerSocket):
     """
     def __init__(self, endpoint, context):
         self.socket = context.socket(zmq.ROUTER)
+        self.socket.setsockopt(zmq.RCVTIMEO, 10)
         super(Router, self).__init__(self.socket, endpoint)
 
     def run(self):
