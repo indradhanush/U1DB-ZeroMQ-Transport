@@ -15,6 +15,10 @@ class SoledadSocket(object):
         self.endpoint = endpoint
 
     def run(self):
+        """
+        Initiates socket connections. Base class implementations must override
+        this method.
+        """
         pass
 
 # TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on. 
@@ -28,9 +32,12 @@ class Dealer(SoledadSocket):
     at the server.
     """
     def __init__(self, endpoint, context):
-        SoledadSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
+        SoledadSocket.__init__(context.socket(zmq.DEALER), endpoint)
         
     def run(self):
+        """
+        Overrides SoledadSocket.run method.
+        """
         self.socket.connect(self.endpoint)
 
 

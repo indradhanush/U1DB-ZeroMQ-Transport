@@ -16,6 +16,10 @@ class ClientSocket(object):
         self.endpoint = endpoint
 
     def run(self):
+        """
+        Initiates the socket connection to the server at self.endpoint;
+        Recommended: Override in sub-class.
+        """
         self.socket.connect(self.endpoint)
 
 
@@ -28,6 +32,9 @@ class Dealer(ClientSocket):
         ClientSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
 
     def run(self):
+        """
+        Overridden method from ClientSocket base class.
+        """
         ClientSocket.run(self)
 
 
@@ -41,6 +48,9 @@ class Subscriber(ClientSocket):
         ClientSocket.__init__(self, context.socket(zmq.SUB), endpoint)
 
     def run(self):
+        """
+        Overridden method from ClientSocket base class.
+        """
         ClientSocket.run(self)
 
     def subscribe(self, msg_type=b''):
@@ -77,6 +87,9 @@ class Client():
         self.sub = Subscriber(endpoint_pub, self.context)
 
     def run(self):
+        """
+        Method to start the client.
+        """
         # Start Dealer and Subscriber instances.
         self.dealer.run()
         self.sub.run()
@@ -105,6 +118,9 @@ class Client():
                 print msg
 
     def tearDown(self):
+        """
+        Method to stop the client and make a clean exit.
+        """
         self.dealer.socket.close()
         self.sub.socket.close()
         self.context.term()

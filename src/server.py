@@ -15,6 +15,10 @@ class ServerSocket(object):
         self.endpoint = endpoint
 
     def run(self):
+        """
+        Initiates the socket by binding to self.endpoint;
+        Recommended: Override in sub-class.
+        """
         self.socket.bind(self.endpoint)
 
 
@@ -29,6 +33,9 @@ class Router(ServerSocket):
         self.socket.setsockopt(zmq.RCVTIMEO, 10)
 
     def run(self):
+        """
+        Overridden method from ServerSocket base class.
+        """
         ServerSocket.run(self)
 
 
@@ -42,6 +49,9 @@ class Publisher(ServerSocket):
         ServerSocket.__init__(self, context.socket(zmq.PUB), endpoint)
 
     def run(self):
+        """
+        Overridden method from ServerSocket base class.
+        """
         ServerSocket.run(self)
 
     def send(self, kvmsg):
@@ -63,6 +73,9 @@ class Server(object):
         self.pub = Publisher(endpoint_pub, self.context)
         
     def run(self):
+        """
+        Method to start the server.
+        """
         # Start Router and Publisher instances.
         self.router.run()
         self.pub.run()
@@ -93,6 +106,9 @@ class Server(object):
                 self.pub.send(kvmsg)
 
     def tearDown(self):
+        """
+        Method to stop the server and make a clean exit.
+        """
         self.router.socket.close()
         self.pub.socket.close()
         self.context.term()
