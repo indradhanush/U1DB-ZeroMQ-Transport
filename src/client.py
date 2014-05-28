@@ -25,11 +25,10 @@ class Dealer(ClientSocket):
     Used for sending requests/updates to zmq.ROUTER socket on the server side.
     """
     def __init__(self, endpoint, context):
-        self.socket = context.socket(zmq.DEALER)
-        super(Dealer, self).__init__(self.socket, endpoint)
+        ClientSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
 
     def run(self):
-        super(Dealer, self).run()
+        ClientSocket.run(self)
 
 
 class Subscriber(ClientSocket):
@@ -39,11 +38,10 @@ class Subscriber(ClientSocket):
     server side.
     """
     def __init__(self, endpoint, context):
-        self.socket = context.socket(zmq.SUB)
-        super(Subscriber, self).__init__(self.socket, endpoint)
+        ClientSocket.__init__(self, context.socket(zmq.SUB), endpoint)
 
     def run(self):
-        super(Subscriber, self).run()
+        ClientSocket.run(self)
 
     def subscribe(self, msg_type=b''):
         """

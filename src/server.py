@@ -25,12 +25,11 @@ class Router(ServerSocket):
     other side.
     """
     def __init__(self, endpoint, context):
-        self.socket = context.socket(zmq.ROUTER)
+        ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
         self.socket.setsockopt(zmq.RCVTIMEO, 10)
-        super(Router, self).__init__(self.socket, endpoint)
 
     def run(self):
-        super(Router, self).run()
+        ServerSocket.run(self)
 
 
 class Publisher(ServerSocket):
@@ -40,11 +39,10 @@ class Publisher(ServerSocket):
     socket on the other side.
     """
     def __init__(self, endpoint, context):
-        self.socket = context.socket(zmq.PUB)
-        super(Publisher, self).__init__(self.socket, endpoint)
+        ServerSocket.__init__(self, context.socket(zmq.PUB), endpoint)
 
     def run(self):
-        super(Publisher, self).run()
+        ServerSocket.run(self)
 
     def send(self, kvmsg):
         """

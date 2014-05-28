@@ -28,12 +28,10 @@ class Dealer(SoledadSocket):
     at the server.
     """
     def __init__(self, endpoint, context):
-        self.socket = context.socket(zmq.DEALER)
-        super(Dealer, self).__init__(self.socket, endpoint)
+        SoledadSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
         
     def run(self):
         self.socket.connect(self.endpoint)
-        super(Dealer, self).run()
 
 
 def simulator(socket, n):
