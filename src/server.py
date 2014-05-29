@@ -30,7 +30,7 @@ class Router(ServerSocket):
     """
     def __init__(self, endpoint, context):
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
-        self.socket.setsockopt(zmq.RCVTIMEO, 10)
+        self.socket.setsockopt(zmq.RCVTIMEO, 1000)
 
     def run(self):
         """
