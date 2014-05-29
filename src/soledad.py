@@ -6,7 +6,7 @@ import settings
 from keyvaluemsg import KeyValueMsg
 
 
-class SoledadSocket(object):
+class ApplicationSocket(object):
     """
     Base class for sockets at SOLEDAD.
     """
@@ -25,18 +25,18 @@ class SoledadSocket(object):
 # See: IRC logs: http://bit.ly/1tczZJC
 # TODO: Or a ROUTER/DEALER combo. 
 # See: IRC logs: http://bit.ly/1ijJxNJ
-class Dealer(SoledadSocket):
+class ServerHandler(ApplicationSocket):
     """
     zmq.DEALER socket.
     Used for handling data from Application Logic to send to zmq.PUB socket
     at the server.
     """
     def __init__(self, endpoint, context):
-        SoledadSocket.__init__(context.socket(zmq.DEALER), endpoint)
+        ApplicationSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
         
     def run(self):
         """
-        Overrides SoledadSocket.run method.
+        Overrides ApplicationSocket.run() method.
         """
         self.socket.connect(self.endpoint)
 
@@ -48,14 +48,15 @@ def simulator(socket, n):
 
     for i in xrange(n):
         request_string = b"Random Update from SOLEDAD side DEALER %d." % (randint(1, 100))
-        socket.send_multipart([key, request_string])
+        socket.send_multipart(request_string)
+        # socket.send_multipart([key, request_string])
         
     print "Updates Sent."
 
 
 def main():
     context = zmq.Context()
-    updates = Dealer(settings.ENDPOINT_PUB, context)
+    updates = ServerHandler(settings.ENDPOINT_SERVER_HANDLER, context)
     updates.run()
     simulator(updates.socket, 5)
 

@@ -23,10 +23,12 @@ class ClientSocket(object):
         self.socket.connect(self.endpoint)
 
 
-class Dealer(ClientSocket):
+class Speaker(ClientSocket):
     """
     zmq.DEALER socket.
     Used for sending requests/updates to zmq.ROUTER socket on the server side.
+    This is the only component in the client that speaks to the Server.Others
+    just listen.
     """
     def __init__(self, endpoint, context):
         ClientSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
@@ -81,37 +83,37 @@ class Client():
     """
     Client Instance. Uses zmq.DEALER socket.
     """
-    def __init__(self, endpoint_router, endpoint_pub):
+    def __init__(self, endpoint_client_handler, endpoint_publisher):
         self.context = zmq.Context()
-        self.dealer = Dealer(endpoint_router, self.context)
-        self.sub = Subscriber(endpoint_pub, self.context)
+        self.speaker = Speaker(endpoint_client_handler, self.context)
+        self.updates = Subscriber(endpoint_publisher, self.context)
 
     def run(self):
         """
         Method to start the client.
         """
         # Start Dealer and Subscriber instances.
-        self.dealer.run()
-        self.sub.run()
-        self.sub.subscribe(b"A")
+        self.speaker.run()
+        self.updates.run()
+        self.updates.subscribe(b"A")
         # ZMQ Event Poller
         poll = zmq.Poller()
-        poll.register(self.dealer.socket, zmq.POLLIN)
+        poll.register(self.speaker.socket, zmq.POLLIN)
 
         for i in xrange(10):
             # Simulating different requests for now. Will be removed.
             import random
-            self.dealer.socket.send("Test Request %d." % (i+1))
+            self.speaker.socket.send("Test Request %d." % (i+1))
         print "Requests sent."
 
         while True:
             sockets = dict(poll.poll(1000))
             # If there are incoming messages.
-            if sockets.get(self.dealer.socket) == zmq.POLLIN:
-                print self.dealer.socket.recv()
+            if sockets.get(self.speaker.socket) == zmq.POLLIN:
+                print self.speaker.socket.recv()
             try:
-                msg = self.sub.recv()
-                self.sub.unsubscribe(b"A")
+                msg = self.updates.recv()
+                self.updates.unsubscribe(b"A")
             except:
                 continue # Interrupted or Timeout
             if msg:
@@ -121,14 +123,15 @@ class Client():
         """
         Method to stop the client and make a clean exit.
         """
-        self.dealer.socket.close()
-        self.sub.socket.close()
+        self.speaker.socket.close()
+        self.updates.socket.close()
         self.context.term()
-        self.dealer = None
+        self.speaker = None
         self.context = None
 
 
 if __name__ == "__main__":
-    client = Client(settings.ENDPOINT_ROUTER, settings.ENDPOINT_PUB)
+    client = Client(settings.ENDPOINT_CLIENT_HANDLER,
+                    settings.ENDPOINT_PUBLISHER)
     client.run()
 
