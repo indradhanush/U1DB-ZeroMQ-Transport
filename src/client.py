@@ -113,7 +113,7 @@ class Client():
                 print self.speaker.socket.recv()
             try:
                 msg = self.updates.recv()
-                self.updates.unsubscribe(b"A")
+                # self.updates.unsubscribe(b"A")
             except:
                 continue # Interrupted or Timeout
             if msg:

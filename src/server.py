@@ -84,8 +84,7 @@ class Server(object):
     """
     Server Instance. Uses Router and Publisher instances.
     """
-    def __init__(self, endpoint_backend, endpoint_frontend,
-                 endpoint_publisher):
+    def __init__(self, endpoint_backend, endpoint_frontend, endpoint_publisher):
         self.context = zmq.Context()
         self.frontend = ClientHandler(endpoint_frontend, self.context)
         self.backend = ApplicationHandler(endpoint_backend, self.context)
@@ -128,12 +127,12 @@ class Server(object):
                 self.frontend.socket.send("Client: Random Response %d" %
                                         (random.randint(1, 100)))
 
-            # else:
-            #     print "Now sending via PUB.."
-            #     # Should be converted to a poll to see application logic
-            #     # has any new updates or not.
-            #     kvmsg = KeyValueMsg(b"A", b"Hello World!")
-            #     self.publisher.send(kvmsg)
+            else:
+                print "Now sending via PUB.."
+                # Should be converted to a poll to see application logic
+                # has any new updates or not.
+                kvmsg = KeyValueMsg(b"A", b"Hello World!")
+                self.publisher.send(kvmsg)
 
     def tearDown(self):
         """
