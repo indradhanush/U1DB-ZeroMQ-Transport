@@ -84,49 +84,48 @@ class Server(object):
     """
     Server Instance. Uses Router and Publisher instances.
     """
-    def __init__(self, endpoint_application_handler, endpoint_client_handler,
+    def __init__(self, endpoint_backend, endpoint_frontend,
                  endpoint_publisher):
         self.context = zmq.Context()
-        self.application_handler = ApplicationHandler(endpoint_application_handler,
-                                                      self.context)
-        self.client_handler = ClientHandler(endpoint_client_handler,
-                                            self.context)
+        self.frontend = ClientHandler(endpoint_frontend, self.context)
+        self.backend = ApplicationHandler(endpoint_backend, self.context)
         self.publisher = Publisher(endpoint_publisher, self.context)
         
     def run(self):
         """
         Method to start the server.
         """
-        # Start Router and Publisher instances.
-        self.client_handler.run()
+        # Start Router frontend, backend and Publisher instances.
+        self.frontend.run()
+        self.backend.run()
         self.publisher.run()
-        self.application_handler.run()
 
+        # Register Pollers.
         poll = zmq.Poller()
-        poll.register(self.application_handler.socket, zmq.POLLIN)
-        poll.register(self.client_handler.socket, zmq.POLLIN)
+        poll.register(self.backend.socket, zmq.POLLIN)
+        poll.register(self.frontend.socket, zmq.POLLIN)
 
         while True:
             sockets = dict(poll.poll(1000))
             # If there are incoming messages.
-            if sockets.get(self.application_handler.socket) == zmq.POLLIN:
-                connection_id = self.application_handler.socket.recv()
-                msg = self.application_handler.socket.recv()
+            if sockets.get(self.backend.socket) == zmq.POLLIN:
+                connection_id = self.backend.socket.recv()
+                msg = self.backend.socket.recv()
                 print "Application: ", msg
 
-                self.application_handler.socket.send(connection_id, zmq.SNDMORE)
-                self.application_handler.socket.send("Reply to: %s" % (msg))
+                self.backend.socket.send(connection_id, zmq.SNDMORE)
+                self.backend.socket.send("Reply to: %s" % (msg))
 
-            if sockets.get(self.client_handler.socket) == zmq.POLLIN:
-                connection_id = self.client_handler.socket.recv()
-                msg = self.client_handler.socket.recv()
+            if sockets.get(self.frontend.socket) == zmq.POLLIN:
+                connection_id = self.frontend.socket.recv()
+                msg = self.frontend.socket.recv()
                 print "Client: ", msg
                 # Send Some reply here or transfer control to
                 # application logic.
                 # Replying with random messages for now.
                 import random
-                self.client_handler.socket.send(connection_id, zmq.SNDMORE)
-                self.client_handler.socket.send("Client: Random Response %d" %
+                self.frontend.socket.send(connection_id, zmq.SNDMORE)
+                self.frontend.socket.send("Client: Random Response %d" %
                                         (random.randint(1, 100)))
 
             # else:
@@ -141,11 +140,11 @@ class Server(object):
         Method to stop the server and make a clean exit.
         """
         # First Disconnect Clients then Application.
-        self.client_handler.socket.close()
+        self.frontend.socket.close()
         self.publisher.socket.close()
-        self.application_handler.socket.close()
+        self.backend.socket.close()
         self.context.term()
-        self.client_handler = None
+        self.frontend = None
         self.context = None
 
 
