@@ -40,6 +40,16 @@ class ServerHandler(ApplicationSocket):
         """
         self.socket.connect(self.endpoint)
 
+        poll = zmq.Poller()
+        poll.register(self.socket, zmq.POLLIN)
+
+        simulator(self.socket, 5)
+        while True:
+            sockets = dict(poll.poll(1000))
+            if sockets.get(self.socket) == zmq.POLLIN:
+                msg = self.socket.recv()
+                print msg
+
 
 def simulator(socket, n):
     """Simulates updates to Publisher. For testing purposes."""
@@ -48,7 +58,7 @@ def simulator(socket, n):
 
     for i in xrange(n):
         request_string = b"Random Update from SOLEDAD side DEALER %d." % (randint(1, 100))
-        socket.send_multipart(request_string)
+        socket.send(request_string)
         # socket.send_multipart([key, request_string])
         
     print "Updates Sent."
@@ -56,9 +66,8 @@ def simulator(socket, n):
 
 def main():
     context = zmq.Context()
-    updates = ServerHandler(settings.ENDPOINT_SERVER_HANDLER, context)
+    updates = ServerHandler(settings.ENDPOINT_APPLICATION_HANDLER, context)
     updates.run()
-    simulator(updates.socket, 5)
 
 
 if __name__ == "__main__":

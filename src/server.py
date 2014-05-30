@@ -100,28 +100,33 @@ class Server(object):
         # Start Router and Publisher instances.
         self.client_handler.run()
         self.publisher.run()
+        self.application_handler.run()
 
         poll = zmq.Poller()
+        poll.register(self.application_handler.socket, zmq.POLLIN)
         poll.register(self.client_handler.socket, zmq.POLLIN)
 
         while True:
             sockets = dict(poll.poll(1000))
             # If there are incoming messages.
-            # if self.application_handler.socket in sockets:
             if sockets.get(self.application_handler.socket) == zmq.POLLIN:
-                msg = self.application_handler.socket.recv_multipart()
-                print msg
+                connection_id = self.application_handler.socket.recv()
+                msg = self.application_handler.socket.recv()
+                print "Application: ", msg
+
+                self.application_handler.socket.send(connection_id, zmq.SNDMORE)
+                self.application_handler.socket.send("Reply to: %s" % (msg))
 
             if sockets.get(self.client_handler.socket) == zmq.POLLIN:
                 connection_id = self.client_handler.socket.recv()
                 msg = self.client_handler.socket.recv()
-                print msg
+                print "Client: ", msg
                 # Send Some reply here or transfer control to
                 # application logic.
                 # Replying with random messages for now.
                 import random
                 self.client_handler.socket.send(connection_id, zmq.SNDMORE)
-                self.client_handler.socket.send("Random Response %d" %
+                self.client_handler.socket.send("Client: Random Response %d" %
                                         (random.randint(1, 100)))
 
             # else:
