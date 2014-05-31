@@ -51,6 +51,18 @@ class ServerHandler(ApplicationSocket):
                 print msg
 
 
+class Application(object):
+    """
+    Application instance. Uses a ServerHandler instance.
+    """
+    def __init__(self, endpoint):
+        self.context = zmq.Context()
+        self.updates = ServerHandler(endpoint, self.context)
+
+    def run(self):
+        self.updates.run()
+
+
 def simulator(socket, n):
     """Simulates updates to Publisher. For testing purposes."""
     from random import randint
@@ -65,9 +77,8 @@ def simulator(socket, n):
 
 
 def main():
-    context = zmq.Context()
-    updates = ServerHandler(settings.ENDPOINT_APPLICATION_HANDLER, context)
-    updates.run()
+    application = Application(settings.ENDPOINT_APPLICATION_HANDLER)
+    application.run()
 
 
 if __name__ == "__main__":
