@@ -59,7 +59,7 @@ class Application(object):
         self.context = zmq.Context()
         self.updates = ServerHandler(endpoint, self.context)
 
-    def run(self):
+    def start(self):
         self.updates.run()
 
 
@@ -78,7 +78,7 @@ def simulator(socket, n):
 
 def main():
     application = Application(settings.ENDPOINT_APPLICATION_HANDLER)
-    application.run()
+    application.start()
 
 
 if __name__ == "__main__":

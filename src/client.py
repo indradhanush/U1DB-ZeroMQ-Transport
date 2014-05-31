@@ -88,7 +88,7 @@ class Client(object):
         self.speaker = Speaker(endpoint_client_handler, self.context)
         self.updates = Subscriber(endpoint_publisher, self.context)
 
-    def run(self):
+    def start(self):
         """
         Method to start the client.
         """
@@ -133,5 +133,5 @@ class Client(object):
 if __name__ == "__main__":
     client = Client(settings.ENDPOINT_CLIENT_HANDLER,
                     settings.ENDPOINT_PUBLISHER)
-    client.run()
+    client.start()
 

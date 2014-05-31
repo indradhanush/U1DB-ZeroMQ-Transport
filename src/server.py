@@ -90,7 +90,7 @@ class Server(object):
         self.backend = ApplicationHandler(endpoint_backend, self.context)
         self.publisher = Publisher(endpoint_publisher, self.context)
         
-    def run(self):
+    def start(self):
         """
         Method to start the server.
         """
@@ -151,5 +151,5 @@ if __name__ == "__main__":
     server = Server(settings.ENDPOINT_APPLICATION_HANDLER,
                     settings.ENDPOINT_CLIENT_HANDLER,
                     settings.ENDPOINT_PUBLISHER)
-    server.run()
+    server.start()
 
