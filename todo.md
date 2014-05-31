@@ -13,3 +13,5 @@ Discuss
 
 * Tier 1 - Tier 2 Communication: There might be a better alternative than DEALER-ROUTER. But seems to work for now.
 
+* Force send an initial "HELLO" message from applciation.ServerHandler to server.Server.backend to register the connection_id on the server side zmq.ROUTER socket.
+
