@@ -79,7 +79,7 @@ class Subscriber(ClientSocket):
         return self.socket.recv_multipart()
 
 
-class Client():
+class Client(object):
     """
     Client Instance. Uses zmq.DEALER socket.
     """
