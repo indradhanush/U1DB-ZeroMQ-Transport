@@ -4,6 +4,8 @@ TODO List + Pointers to Discuss before implementing
 TODO
 ----
 
+* Might use mock in the future for tests.
+
 Discuss
 -------
 
