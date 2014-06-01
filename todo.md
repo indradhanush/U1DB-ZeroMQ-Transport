@@ -9,7 +9,7 @@ TODO
 Discuss
 -------
 
-* Rename Server.run() to Server.start() and likewise in Client and Application classes to clear confusion from ServerSocket.run() and likewise from ClientSocket.run() and ApplicationSocket.run()
+* ~~Rename Server.run() to Server.start() and likewise in Client and Application classes to clear confusion from ServerSocket.run() and likewise from ClientSocket.run() and ApplicationSocket.run()~~
 
 * application.ServerHandler: Currently a DEALER-ROUTER pair and uses __tcp__ as transport. Might be a better idea to use __ipc__ transport instead. Seems faster than __tcp__. Need more research.
 
