@@ -119,7 +119,7 @@ class Client(object):
             if msg:
                 print msg
 
-    def tearDown(self):
+    def stop(self):
         """
         Method to stop the client and make a clean exit.
         """

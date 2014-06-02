@@ -134,7 +134,7 @@ class Server(object):
                 kvmsg = KeyValueMsg(b"A", b"Hello World!")
                 self.publisher.send(kvmsg)
 
-    def tearDown(self):
+    def stop(self):
         """
         Method to stop the server and make a clean exit.
         """

@@ -17,4 +17,4 @@ Discuss
 
 * Force send an initial "HELLO" message from applciation.ServerHandler to server.Server.backend to register the connection_id on the server side zmq.ROUTER socket.
 
-* Rename Server.tearDown() to Server.stop() and likewise for Client and Application classes.
+* ~~Rename Server.tearDown() to Server.stop() and likewise for Client and Application classes.~~
