@@ -3,7 +3,7 @@ import zmq
 
 # Local Imports
 import settings
-from keyvaluemsg import KeyValueMsg
+from message import KeyValueMsg
 
 
 class ApplicationSocket(object):
