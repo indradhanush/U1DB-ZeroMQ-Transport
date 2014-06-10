@@ -3,16 +3,17 @@ import sys
 import os
 import unittest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 # ZMQ Imports
 import zmq
 
 # Local Imports
-from server import Server, ClientHandler, ApplicationHandler, Publisher
-from client import Client, Speaker, Subscriber
-from application import Application, ServerHandler
-from settings import *
+from zmq_transport.server.zmq_server import Server, ClientHandler, ApplicationHandler,\
+    Publisher
+from zmq.transport.client.zmq_client import Client, Speaker, Subscriber
+from zmq_transport.application.application import Application, ServerHandler
+from zmq_transport.config.settings import *
+
 
 class ZMQTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
