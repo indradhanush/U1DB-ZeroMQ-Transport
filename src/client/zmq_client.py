@@ -79,9 +79,9 @@ class Subscriber(ClientSocket):
         return self.socket.recv_multipart()
 
 
-class Client(object):
+class ZMQClientBase(object):
     """
-    Client Instance. Uses zmq.DEALER socket.
+    Client Instance. Uses zmq.DEALER socket and zmq.SUB socket.
     """
     def __init__(self, endpoint_client_handler, endpoint_publisher):
         self.context = zmq.Context()
