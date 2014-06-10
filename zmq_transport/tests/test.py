@@ -10,8 +10,8 @@ import zmq
 # Local Imports
 from zmq_transport.server.zmq_server import Server, ClientHandler, ApplicationHandler,\
     Publisher
-from zmq.transport.client.zmq_client import Client, Speaker, Subscriber
-from zmq_transport.application.application import Application, ServerHandler
+from zmq_transport.client.zmq_client import ZMQClientBase, Speaker, Subscriber
+from zmq_transport.application.zmq_application import Application, ServerHandler
 from zmq_transport.config.settings import *
 
 
@@ -82,10 +82,10 @@ class ApplicationTest(ZMQTest):
                               "Instance is not of type Application.")
 
 
-class ClientTest(ZMQTest):
+class ZMQClientBaseTest(ZMQTest):
 
     def setUp(self):
-        self.client = Client(ENDPOINT_CLIENT_HANDLER,
+        self.client = ZMQClientBase(ENDPOINT_CLIENT_HANDLER,
                              ENDPOINT_PUBLISHER)
         # TODO: Replace self.server with mock.
         self.server = Server(ENDPOINT_APPLICATION_HANDLER,
@@ -93,8 +93,8 @@ class ClientTest(ZMQTest):
                              ENDPOINT_PUBLISHER)
 
     def test_client_init(self):
-        self.assertIsInstance(self.client, Client,
-                              "Instance is not of type Client.")
+        self.assertIsInstance(self.client, ZMQClientBase,
+                              "Instance is not of type ZMQClientBase.")
         self.assertIsInstance(self.client.speaker, Speaker,
                               "Instance is not of type Speaker.")
         self.assertIsInstance(self.client.updates, Subscriber,

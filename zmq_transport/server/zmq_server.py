@@ -2,8 +2,8 @@
 import zmq
 
 # Local Imports
-import settings
-from message import KeyValueMsg
+from zmq_transport.config import settings
+from zmq_transport.common.message import KeyValueMsg
 
 
 class ServerSocket(object):
