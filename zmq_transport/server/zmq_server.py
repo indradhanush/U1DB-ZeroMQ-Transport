@@ -1,5 +1,7 @@
 # ZeroMQ Imports
 import zmq
+from zmq.eventloop.zmqstream import ZMQStream
+from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
 from zmq_transport.config import settings
@@ -85,11 +87,34 @@ class Server(object):
     Server Instance. Uses Router and Publisher instances.
     """
     def __init__(self, endpoint_backend, endpoint_frontend, endpoint_publisher):
+        """
+        :param endpoint_backend: Endpoint of ROUTER socket facing Application.
+        :type endpoint_: str
+        :param endpoint_: Endpoint of ROUTER socekt facing Client.
+        :type endpoint_: str
+        :param endpoint_: Endpoint of PUB socket facing Client.
+        :type endpoint_: str
+        """
+
         self.context = zmq.Context()
         self.frontend = ClientHandler(endpoint_frontend, self.context)
         self.backend = ApplicationHandler(endpoint_backend, self.context)
         self.publisher = Publisher(endpoint_publisher, self.context)
-        
+        self.dataset = []
+        self.loop = IOLoop.instance()
+
+        # Wrapping zmq sockets in ZMQStream for IOLoop handlers.
+        self.frontend.socket = ZMQStream(self.frontend.socket)
+        self.backend.socket = ZMQStream(self.backend.socket)
+        self.publisher.socket = ZMQStream(self.publisher.socket)
+
+        # Registering callback handlers.
+        self.frontend.socket.on_send(self.handle_snd_update_client)
+        self.frontend.socket.on_recv(self.handle_rcv_update_client)
+        self.publisher.socket.on_send(self.handle_snd_update_client)
+        self.backend.socket.on_send(self.handle_snd_update_app)
+        self.backend.socket.on_recv(self.handle_rcv_update_app)
+
     def start(self):
         """
         Method to start the server.
@@ -99,40 +124,59 @@ class Server(object):
         self.backend.run()
         self.publisher.run()
 
-        # Register Pollers.
-        poll = zmq.Poller()
-        poll.register(self.backend.socket, zmq.POLLIN)
-        poll.register(self.frontend.socket, zmq.POLLIN)
+        try:
+            self.loop.start()
+        except KeyboardInterrupt:
+            print "<SERVER> Interrupted."
 
-        while True:
-            sockets = dict(poll.poll(1000))
-            # If there are incoming messages.
-            if sockets.get(self.backend.socket) == zmq.POLLIN:
-                connection_id = self.backend.socket.recv()
-                msg = self.backend.socket.recv()
-                print "Application: ", msg
+    ########################## Start of callbacks. ############################
 
-                self.backend.socket.send(connection_id, zmq.SNDMORE)
-                self.backend.socket.send("Reply to: %s" % (msg))
+    def handle_snd_update_client(self, msg, status):
+        """
+        Callback function to handle application logic on sending
+        updates/requests to clients via both ROUTER and PUB sockets.
 
-            if sockets.get(self.frontend.socket) == zmq.POLLIN:
-                connection_id = self.frontend.socket.recv()
-                msg = self.frontend.socket.recv()
-                print "Client: ", msg
-                # Send Some reply here or transfer control to
-                # application logic.
-                # Replying with random messages for now.
-                import random
-                self.frontend.socket.send(connection_id, zmq.SNDMORE)
-                self.frontend.socket.send("Client: Random Response %d" %
-                                        (random.randint(1, 100)))
+        :param msg: Raw/Serialized message that was sent.
+        :type msg: list
+        :param status: return result of socket.send_multipart(msg)
+        :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
+        """
+        print "<SERVER> Sent_to_Client: ", msg[1]
 
-            else:
-                print "Now sending via PUB.."
-                # Should be converted to a poll to see application logic
-                # has any new updates or not.
-                kvmsg = KeyValueMsg(b"A", b"Hello World!")
-                self.publisher.send(kvmsg)
+    def handle_rcv_update_client(self, msg):
+        """
+        Callback to handle incoming updates on ROUTER socket from clients.
+        :param msg: Raw Message received.
+        :type msg: list
+        """
+        print msg
+        connection_id, msg = msg
+        print "<SERVER> Received_from_Client: ", msg
+        self.frontend.socket.send_multipart([connection_id, "PING-OK"])
+
+    def handle_snd_update_app(self, msg, status):
+        """
+        Callback function to handle application logic on sending
+        updates/requests to application via DEALER socket.
+
+        :param msg: Raw/Serialized message that was sent.
+        :type msg: list
+        :param status: return result of socket.send_multipart(msg)
+        :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
+        """
+        print "<SERVER> Sent_to_App: ", msg
+
+    def handle_rcv_update_app(self, msg):
+        """
+        Callback to handle incoming updates on ROUTER socket from application.
+        :param msg: Raw Message received.
+        :type: list
+        """
+        print "<SERVER> Received_from_App: ", msg
+        connection_id, msg = msg
+        self.backend.socket.send_multipart([connection_id, "PING-APP-OK"])
+
+    ########################### End of callbacks. #############################
 
     def stop(self):
         """
@@ -145,11 +189,4 @@ class Server(object):
         self.context.term()
         self.frontend = None
         self.context = None
-
-
-if __name__ == "__main__":
-    server = Server(settings.ENDPOINT_APPLICATION_HANDLER,
-                    settings.ENDPOINT_CLIENT_HANDLER,
-                    settings.ENDPOINT_PUBLISHER)
-    server.start()
 

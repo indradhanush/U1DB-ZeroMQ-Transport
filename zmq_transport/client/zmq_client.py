@@ -2,6 +2,7 @@
 import zmq
 from zmq.eventloop.zmqstream import ZMQStream
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
+
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
@@ -89,18 +90,11 @@ class ZMQClientBase(object):
         """
         Initialize instance of type ZMQClientBase.
 
-        :param context: ZeroMQ Context
-        :type context: zmq.Context instance
-        :param speaker: zmq.DEALER socket abstraction
-        :type speaker: zmq_transport.client.Speaker instance
-        :param updates: zmq.PUB socket abstraction
-        :type updates: zmq_transport.client.Subscriber instance
-        :param dataset: List to store updates. Acts as a queue
-        :type dataset: list
-        :param loop: IOLoop handler
-        :type loop: zmq.eventloop.ioloop.IOLoop instance
-
-        :returns: zmq_transport.client.ZMQClientBase instance
+        :param endpoint_client_handler: Endpoint of ROUTER socket on Server.
+        :type endpoint_client_handler: str
+        :param endpoint_publisher: Endpoint of PUB socket on Server.
+        :type endpoint_publisher: str
+        :returns: zmq_transport.client.ZMQClientBase instance.
         """
         self.context = zmq.Context()
         self.speaker = Speaker(endpoint_client_handler, self.context)
@@ -134,42 +128,19 @@ class ZMQClientBase(object):
         except KeyboardInterrupt:
             print "<CLIENT> Interrupted."
 
-        # ZMQ Event Poller
-        # poll = zmq.Poller()
-        # poll.register(self.speaker.socket, zmq.POLLIN)
-
-        # for i in xrange(10):
-        #     # Simulating different requests for now. Will be removed.
-        #     import random
-        #     self.speaker.socket.send("Test Request %d." % (i+1))
-        # print "Requests sent."
-
-        # while True:
-        #     sockets = dict(poll.poll(1000))
-        #     # If there are incoming messages.
-        #     if sockets.get(self.speaker.socket) == zmq.POLLIN:
-        #         print self.speaker.socket.recv()
-        #     try:
-        #         msg = self.updates.recv()
-        #         # self.updates.unsubscribe(b"A")
-        #     except:
-        #         continue # Interrupted or Timeout
-        #     if msg:
-        #         print msg
-
     ########################## Start of callbacks. ############################
 
     def handle_snd_update(self, msg, status):
         """
         Callback function to make any application level changes after Update/Request has been
-        sent via DEALER socket.
+        sent via DEALER socket to Server.
 
         :param msg: Raw/Serialized message that was sent.
-        :type msg: str
+        :type msg: list
         :param status: return result of socket.send_multipart(msg)
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
-        print "<CLIENT> Sent: ", msg
+        print "<CLIENT> Sent: ", msg[0]
 
     def handle_rcv_update(self, msg):
         """
@@ -178,23 +149,23 @@ class ZMQClientBase(object):
         :param msg: Raw Message received.
         :type: list
         """
-        print "<CLIENT> Received: ", msg
-        self.dataset.append(msg)
-        print "<CLIENT> handle_rcv_update: ", self.dataset
+        print "<CLIENT> Received: ", msg[0]
+        self.dataset.append(msg[0])
 
     def check_updates(self):
         """
         Method to regularly check new updates in self.dataset
         """
         if self.dataset:
-            print "<CLIENT> check_updates: ", self.dataset
             for data in self.dataset:
-                self.speaker.socket.send_multipart(str(data))
+                # TODO: Converting to str now. Will do some
+                # serialization with message structures later.
+                self.speaker.socket.send_multipart([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################
 
-    def stop(self):
+    def stop(sel):
         """
         Method to stop the client and make a clean exit.
         """
