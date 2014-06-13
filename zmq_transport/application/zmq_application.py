@@ -41,6 +41,12 @@ class ServerHandler(ApplicationSocket):
     at the server.
     """
     def __init__(self, endpoint, context):
+        """
+        :param endpoint: Endpoint to bind or connect the socket to.
+        :type endpoint: str
+        :param context: ZeroMQ Context.
+        :type context: zmq.Context instance.
+        """
         ApplicationSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
         
     def run(self):
