@@ -63,23 +63,23 @@ class Application(object):
         """
         self._context = zmq.Context()
         self._loop = IOLoop.instance()
-        self.updates = ServerHandler(endpoint, self._context)
+        self.server_handler = ServerHandler(endpoint, self._context)
         self.dataset = []
 
         # Wrapping zmq socket in ZMQStream for IOLoop handlers.
-        self.updates._socket = ZMQStream(self.updates._socket)
+        self.server_handler._socket = ZMQStream(self.server_handler._socket)
 
         # Registering callback handlers.
-        self.updates._socket.on_send(self.handle_snd_update)
-        self.updates._socket.on_recv(self.handle_rcv_update)
+        self.server_handler._socket.on_send(self.handle_snd_update)
+        self.server_handler._socket.on_recv(self.handle_rcv_update)
         self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def start(self):
         """
         Method to start the application.
         """
-        self.updates.run()
-        self.updates._socket.send("PING-APP")
+        self.server_handler.run()
+        self.server_handler._socket.send("PING-APP")
         self.check_updates_callback.start()
         # Random data for test.
         self.dataset = ["DATA - %d" % (i) for i in range(1, 10)]
@@ -120,7 +120,7 @@ class Application(object):
         if self.dataset:
             for data in self.dataset:
                 print data
-                self.updates._socket.send_multipart([data])
+                self.server_handler._socket.send_multipart([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################
