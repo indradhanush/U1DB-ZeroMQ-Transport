@@ -1,0 +1,53 @@
+// Message type for zmq communictions.
+
+package zmq_transport.common;
+
+
+// A PingRequest message is used to find out if a server or a component is
+// alive.
+message PingRequest {
+}
+
+
+// A SubscribeRequest message is used to subscribe a zmq.SUB socket to a
+// particular message type from a zmq.PUB socket.
+message SubscribeRequest {
+    required string key = 1;
+}
+
+
+// A UnsubscribeRequest message is used to unsubscribe a zmq.SUB socket from
+// a particular message type from a zmq.PUB socekt.
+message UnsubscribeRequest {
+    required string key = 1;
+}
+
+
+// A SourceRequest message tells the target about the sync request.
+message SourceRequest {
+    required string source_replica_uid = 1;
+    required string source_replica_generation = 2 ;
+    required string source_replica_trans_id = 3;
+    required string target_replica_last_known_generation = 4;
+    required string target_replica_last_known_trans_id = 5;
+    required string doc_id = 6;
+    required string doc_rev = 7;
+    required string doc_content = 8;
+}
+
+
+// A TargetResponse message is a response of a SourceRequest message from a
+// source.
+message TargetResponse {
+    required string target_replica_uid = 1;
+    required string target_replica_generation = 2;
+    required string target_replica_trans_id = 3;
+}
+
+
+// A PublisherUpdate message is message send from the PUB socket.
+message PublisherUpdate {
+    required string key = 1;
+    // TODO: Need a param to accomodate message structures.
+}
+
