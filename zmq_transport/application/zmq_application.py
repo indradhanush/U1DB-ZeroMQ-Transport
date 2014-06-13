@@ -13,8 +13,14 @@ class ApplicationSocket(object):
     Base class for sockets at SOLEDAD.
     """
     def __init__(self, socket, endpoint):
-        self.socket = socket
-        self.endpoint = endpoint
+        """
+        :param socket: ZeroMQ socket.
+        :type: zmq.context.socket instance.
+        :param endpoint: Endpoint to bind or connect the socket to.
+        :type endpoint: str
+        """
+        self._socket = socket
+        self._endpoint = endpoint
 
     def run(self):
         """
@@ -41,7 +47,7 @@ class ServerHandler(ApplicationSocket):
         """
         Overrides ApplicationSocket.run() method.
         """
-        self.socket.connect(self.endpoint)
+        self._socket.connect(self._endpoint)
 
 
 class Application(object):
@@ -54,20 +60,18 @@ class Application(object):
 
         :param endpoint: Endpoint of Server.
         :type endpoint: str
-
-        :returns: zmq_transport.application.Application instance.
         """
-        self.context = zmq.Context()
-        self.updates = ServerHandler(endpoint, self.context)
+        self._context = zmq.Context()
+        self._loop = IOLoop.instance()
+        self.updates = ServerHandler(endpoint, self._context)
         self.dataset = []
-        self.loop = IOLoop.instance()
 
         # Wrapping zmq socket in ZMQStream for IOLoop handlers.
-        self.updates.socket = ZMQStream(self.updates.socket)
+        self.updates._socket = ZMQStream(self.updates._socket)
 
         # Registering callback handlers.
-        self.updates.socket.on_send(self.handle_snd_update)
-        self.updates.socket.on_recv(self.handle_rcv_update)
+        self.updates._socket.on_send(self.handle_snd_update)
+        self.updates._socket.on_recv(self.handle_rcv_update)
         self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def start(self):
@@ -75,12 +79,12 @@ class Application(object):
         Method to start the application.
         """
         self.updates.run()
-        self.updates.socket.send("PING-APP")
+        self.updates._socket.send("PING-APP")
         self.check_updates_callback.start()
         # Random data for test.
         self.dataset = ["DATA - %d" % (i) for i in range(1, 10)]
         try:
-            self.loop.start()
+            self._loop.start()
         except KeyboardInterrupt:
             print "<APPLICATION> Interrupted."
 
@@ -116,7 +120,7 @@ class Application(object):
         if self.dataset:
             for data in self.dataset:
                 print data
-                self.updates.socket.send_multipart([data])
+                self.updates._socket.send_multipart([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################
