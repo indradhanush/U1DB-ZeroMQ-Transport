@@ -1,4 +1,7 @@
 argparse==1.2.1
+backports.ssl-match-hostname==3.4.0.2
 distribute==0.6.24
+protobuf==2.5.0
 pyzmq==14.1.1
+tornado==3.2.2
 wsgiref==0.1.2
