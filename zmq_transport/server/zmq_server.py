@@ -89,13 +89,12 @@ class Server(object):
     def __init__(self, endpoint_backend, endpoint_frontend, endpoint_publisher):
         """
         :param endpoint_backend: Endpoint of ROUTER socket facing Application.
-        :type endpoint_: str
-        :param endpoint_: Endpoint of ROUTER socekt facing Client.
-        :type endpoint_: str
-        :param endpoint_: Endpoint of PUB socket facing Client.
-        :type endpoint_: str
+        :type endpoint_backend: str
+        :param endpoint_frontend: Endpoint of ROUTER socket facing Client.
+        :type endpoint_frontend: str
+        :param endpoint_publisher: Endpoint of PUB socket facing Client.
+        :type endpoint_publisher: str
         """
-
         self.context = zmq.Context()
         self.frontend = ClientHandler(endpoint_frontend, self.context)
         self.backend = ApplicationHandler(endpoint_backend, self.context)
