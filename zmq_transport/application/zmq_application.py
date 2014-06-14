@@ -10,24 +10,25 @@ from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ApplicationSocket(ZMQBaseSocket):
     """
-    Base class for sockets at SOLEDAD.
+    Base class for sockets at SOLEDAD. Derived from ZMQBaseSocket.
     """
     def __init__(self, socket, endpoint):
         """
+        Initialize an ApplicationSocket instance.
+
         :param socket: ZeroMQ socket.
-        :type: zmq.context.socket instance.
+        :type socket: zmq.Context.socket instance.
         :param endpoint: Endpoint to bind or connect the socket to.
         :type endpoint: str
         """
         ZMQBaseSocket.__init__(self, socket, endpoint)
 
-    # def run(self):
-    #     """
-    #     Initiates socket connections. Base class implementations must over
-    #     ride
-    #     this method.
-    #     """
-    #     pass
+    def run(self):
+        """
+        Initiates socket connections. Base class implementations must over
+        ride this method.
+        """
+        raise NotImplementedError(self.run)
 
 
 # TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on.
@@ -116,7 +117,7 @@ class Application(ZMQBaseComponent):
         Callback to handle incoming updates on DEALER sockets.
 
         :param msg: Raw Message received.
-        :type: list
+        :type msg: list
         """
         print "<APPLICATION> Received: ", msg[0]
         self.dataset.append(msg[0])
@@ -136,7 +137,7 @@ class Application(ZMQBaseComponent):
     def stop(self):
         """
         :param socket: ZeroMQ socket.
-        :type: zmq.context.socket instance.
+        :type socket: zmq.context.socket instance.
         :param endpoint: Endpoint to bind or connect the socket to.
         :type endpoint: str
         """

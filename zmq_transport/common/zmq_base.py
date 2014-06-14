@@ -10,7 +10,7 @@ class ZMQBaseSocket(object):
     def __init__(self, socket, endpoint):
         """
         :param socket: ZeroMQ socket.
-        :type: zmq.context.socket instance.
+        :type socket: zmq.Context.socket
         :param endpoint: Endpoint to bind or connect the socket to.
         :type endpoint: str
         """
@@ -19,7 +19,7 @@ class ZMQBaseSocket(object):
 
     def run(self):
         """
-        Base method that connects or binds a socket to self._endpoint.
+        Base mehod that connects or binds a socket to self._endpoint.
         Sub classes must override this method.
         """
         raise NotImplementedError(self.run)

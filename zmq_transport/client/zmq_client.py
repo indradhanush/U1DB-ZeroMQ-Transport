@@ -10,9 +10,18 @@ from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ClientSocket(ZMQBaseSocket):
     """
-    Base class for sockets at the client.
+    Base class for sockets at the client. Derived from ZMQBaseSocket.
     """
     def __init__(self, socket, endpoint):
+        """
+        Initialize a ClientSocket instance.
+
+        :param socket: ZeroMQ socket.
+        :type socket: zmq.Context.socket
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        """
+
         ZMQBaseSocket.__init__(self, socket, endpoint)
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
@@ -31,6 +40,14 @@ class Speaker(ClientSocket):
     just listen.
     """
     def __init__(self, endpoint, context):
+        """
+        Initialize an Speaker instance.
+
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        :param context: ZeroMQ context.
+        :type context: zmq.Context
+        """
         ClientSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
 
     def run(self):
@@ -47,6 +64,14 @@ class Subscriber(ClientSocket):
     server side.
     """
     def __init__(self, endpoint, context):
+        """
+        Initialize an Speaker instance.
+
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        :param context: ZeroMQ context.
+        :type context: zmq.Context
+        """
         ClientSocket.__init__(self, context.socket(zmq.SUB), endpoint)
 
     def run(self):
@@ -146,7 +171,7 @@ class ZMQClientBase(ZMQBaseComponent):
         Callback to handle incoming updates both DEALER and SUB sockets.
 
         :param msg: Raw Message received.
-        :type: list
+        :type msg: list
         """
         print "<CLIENT> Received: ", msg[0]
         self.dataset.append(msg[0])

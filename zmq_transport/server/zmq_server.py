@@ -10,9 +10,17 @@ from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ServerSocket(ZMQBaseSocket):
     """
-    Base class for sockets at the server.
+    Base class for sockets at the server. Derived from ZMQBaseSocket.
     """
     def __init__(self, socket, endpoint):
+        """
+        Initialize a ServerSocket instance. Derived from ZMQBaseSocket.
+
+        :param socket: ZeroMQ socket.
+        :type socket: zmq.Context.socket
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        """
         ZMQBaseSocket.__init__(self, socket, endpoint)
 
     def run(self):
@@ -30,6 +38,14 @@ class ApplicationHandler(ServerSocket):
     the Application end and for sending new updates to the Application end.
     """
     def __init__(self, endpoint, context):
+        """
+        Initialize an ApplicationHandler instance.
+
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        :param context: ZeroMQ context.
+        :type context: zmq.Context
+        """
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
@@ -47,6 +63,14 @@ class ClientHandler(ServerSocket):
     Client end and for sending updates to slow-joiners.
     """
     def __init__(self, endpoint, context):
+        """
+        Initialize an ClientHandler instance.
+
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        :param context: ZeroMQ context.
+        :type context: zmq.Context
+        """
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
@@ -64,6 +88,14 @@ class Publisher(ServerSocket):
     socket on the other side.
     """
     def __init__(self, endpoint, context):
+        """
+        Initialize an Publisher instance.
+
+        :param endpoint: Endpoint of socket to which it will connect or bind.
+        :type endpoint: str
+        :param context: ZeroMQ context.
+        :type context: zmq.Context
+        """
         ServerSocket.__init__(self, context.socket(zmq.PUB), endpoint)
 
     def run(self):
@@ -87,6 +119,8 @@ class Server(ZMQBaseComponent):
     """
     def __init__(self, endpoint_backend, endpoint_frontend, endpoint_publisher):
         """
+        Initiates a Server instance. Derived from ZMQBaseComponent.
+
         :param endpoint_backend: Endpoint of ROUTER socket facing Application.
         :type endpoint_backend: str
         :param endpoint_frontend: Endpoint of ROUTER socket facing Client.
@@ -102,8 +136,8 @@ class Server(ZMQBaseComponent):
 
     def _prepare_reactor(self):
         """
-        Prepares the reactor by wrapping sockets over ZMQStream and registering
-        handlers.
+        Prepares the reactor by instantiating the reactor loop, wrapping sockets
+        over ZMQStream and registering handlers.
         """
         self._loop = IOLoop.instance()
         self.frontend.wrap_zmqstream()
@@ -171,7 +205,7 @@ class Server(ZMQBaseComponent):
         """
         Callback to handle incoming updates on ROUTER socket from application.
         :param msg: Raw Message received.
-        :type: list
+        :type msg: list
         """
         print "<SERVER> Received_from_App: ", msg
         connection_id, msg = msg
