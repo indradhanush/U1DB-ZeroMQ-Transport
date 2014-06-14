@@ -6,7 +6,7 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
-from zmq_transport.common.zmq_base import ZMQBaseSocket
+from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ClientSocket(ZMQBaseSocket):
     """
@@ -20,7 +20,7 @@ class ClientSocket(ZMQBaseSocket):
         """
         Initiates the socket connection to the server at self.endpoint;
         """
-        self._socket.connect(self.endpoint)
+        self._socket.connect(self._endpoint)
 
 
 class Speaker(ClientSocket):
@@ -79,7 +79,7 @@ class Subscriber(ClientSocket):
         return self._socket.recv_multipart()
 
 
-class ZMQClientBase(object):
+class ZMQClientBase(ZMQBaseComponent):
     """
     Client Instance. Uses zmq.DEALER socket and zmq.SUB socket.
     """
@@ -93,11 +93,9 @@ class ZMQClientBase(object):
         :type endpoint_publisher: str
         :returns: zmq_transport.client.ZMQClientBase instance.
         """
-        self._context = zmq.Context()
-        self._loop = None
+        ZMQBaseComponent.__init__(self)
         self.speaker = Speaker(endpoint_client_handler, self._context)
         self.updates = Subscriber(endpoint_publisher, self._context)
-        self.dataset = []
 
     def _prepare_reactor(self):
         """

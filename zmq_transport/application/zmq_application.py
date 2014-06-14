@@ -6,7 +6,7 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
-from zmq_transport.common.zmq_base import ZMQBaseSocket
+from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ApplicationSocket(ZMQBaseSocket):
     """
@@ -56,7 +56,7 @@ class ServerHandler(ApplicationSocket):
         self._socket.connect(self._endpoint)
 
 
-class Application(object):
+class Application(ZMQBaseComponent):
     """
     Application instance. Uses a ServerHandler instance.
     """
@@ -67,10 +67,9 @@ class Application(object):
         :param endpoint: Endpoint of Server.
         :type endpoint: str
         """
-        self._context = zmq.Context()
-        self._loop = None
+        ZMQBaseComponent.__init__(self)
         self.server_handler = ServerHandler(endpoint, self._context)
-        self.dataset = []
+
 
     def _prepare_reactor(self):
         """

@@ -66,3 +66,35 @@ class ZMQBaseSocket(object):
         """
         self._socket.close()
 
+
+class ZMQBaseComponent(object):
+    """
+    Base class for zmq components.
+    """
+    def __init__(self):
+        """
+        Initialize a ZMQBaseComponent instance.
+        """
+        self._context = zmq.Context()
+        self._loop = None
+        self.dataset = []
+
+    def _prepare_reactor(self):
+        """
+        This method is responsible for initializing a "loop", wrapping sockets
+        over ZNQStream and registering callback handlers.
+        """
+        raise NotImplementedError(self._prepare_reactor)
+
+    def start(self):
+        """
+        This method starts the component.
+        """
+        raise NotImplementedError(self.start)
+
+    def stop(self):
+        """
+        This method stops the component and makes for a clean exit.
+        """
+        raise NotImplementedError(self.stop)
+

@@ -6,7 +6,7 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
-from zmq_transport.common.zmq_base import ZMQBaseSocket
+from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -81,7 +81,7 @@ class Publisher(ServerSocket):
         self._socket.send_multipart([ kvmsg.key, kvmsg.body ])
 
 
-class Server(object):
+class Server(ZMQBaseComponent):
     """
     Server Instance. Uses Router and Publisher instances.
     """
@@ -94,12 +94,11 @@ class Server(object):
         :param endpoint_publisher: Endpoint of PUB socket facing Client.
         :type endpoint_publisher: str
         """
-        self._context = zmq.Context()
-        self._loop = None
+        ZMQBaseComponent.__init__(self)
         self.frontend = ClientHandler(endpoint_frontend, self._context)
         self.backend = ApplicationHandler(endpoint_backend, self._context)
         self.publisher = Publisher(endpoint_publisher, self._context)
-        self.dataset = []
+
 
     def _prepare_reactor(self):
         """
