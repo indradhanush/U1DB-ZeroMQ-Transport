@@ -6,22 +6,21 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
+from zmq_transport.common.zmq_base import ZMQBaseSocket
 
-
-class ServerSocket(object):
+class ServerSocket(ZMQBaseSocket):
     """
     Base class for sockets at the server.
     """
     def __init__(self, socket, endpoint):
-        self.socket = socket
-        self.endpoint = endpoint
+        ZMQBaseSocket.__init__(self, socket, endpoint)
 
     def run(self):
         """
-        Initiates the socket by binding to self.endpoint;
+        Initiates the socket by binding to self._endpoint;
         Recommended: Override in sub-class.
         """
-        self.socket.bind(self.endpoint)
+        self._socket.bind(self._endpoint)
 
 
 class ApplicationHandler(ServerSocket):
@@ -32,7 +31,7 @@ class ApplicationHandler(ServerSocket):
     """
     def __init__(self, endpoint, context):
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
-        self.socket.setsockopt(zmq.RCVTIMEO, 1000)
+        self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
     def run(self):
         """
@@ -49,7 +48,7 @@ class ClientHandler(ServerSocket):
     """
     def __init__(self, endpoint, context):
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
-        self.socket.setsockopt(zmq.RCVTIMEO, 1000)
+        self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
     def run(self):
         """
@@ -79,7 +78,7 @@ class Publisher(ServerSocket):
         :param kvmsg: KeyValueMsg instance.
         """
         assert(isinstance(kvmsg, KeyValueMsg))
-        self.socket.send_multipart([ kvmsg.key, kvmsg.body ])
+        self._socket.send_multipart([ kvmsg.key, kvmsg.body ])
 
 
 class Server(object):
@@ -95,36 +94,40 @@ class Server(object):
         :param endpoint_publisher: Endpoint of PUB socket facing Client.
         :type endpoint_publisher: str
         """
-        self.context = zmq.Context()
-        self.frontend = ClientHandler(endpoint_frontend, self.context)
-        self.backend = ApplicationHandler(endpoint_backend, self.context)
-        self.publisher = Publisher(endpoint_publisher, self.context)
+        self._context = zmq.Context()
+        self._loop = None
+        self.frontend = ClientHandler(endpoint_frontend, self._context)
+        self.backend = ApplicationHandler(endpoint_backend, self._context)
+        self.publisher = Publisher(endpoint_publisher, self._context)
         self.dataset = []
-        self.loop = IOLoop.instance()
 
-        # Wrapping zmq sockets in ZMQStream for IOLoop handlers.
-        self.frontend.socket = ZMQStream(self.frontend.socket)
-        self.backend.socket = ZMQStream(self.backend.socket)
-        self.publisher.socket = ZMQStream(self.publisher.socket)
-
-        # Registering callback handlers.
-        self.frontend.socket.on_send(self.handle_snd_update_client)
-        self.frontend.socket.on_recv(self.handle_rcv_update_client)
-        self.publisher.socket.on_send(self.handle_snd_update_client)
-        self.backend.socket.on_send(self.handle_snd_update_app)
-        self.backend.socket.on_recv(self.handle_rcv_update_app)
+    def _prepare_reactor(self):
+        """
+        Prepares the reactor by wrapping sockets over ZMQStream and registering
+        handlers.
+        """
+        self._loop = IOLoop.instance()
+        self.frontend.wrap_zmqstream()
+        self.publisher.wrap_zmqstream()
+        self.backend.wrap_zmqstream()
+        self.frontend.register_handler("on_send", self.handle_snd_update_client)
+        self.frontend.register_handler("on_recv", self.handle_rcv_update_client)
+        self.publisher.register_handler("on_send", self.handle_snd_update_client)
+        self.backend.register_handler("on_send", self.handle_snd_update_app)
+        self.backend.register_handler("on_recv", self.handle_rcv_update_app)
 
     def start(self):
         """
         Method to start the server.
         """
         # Start Router frontend, backend and Publisher instances.
+        self._prepare_reactor()
         self.frontend.run()
         self.backend.run()
         self.publisher.run()
 
         try:
-            self.loop.start()
+            self._loop.start()
         except KeyboardInterrupt:
             print "<SERVER> Interrupted."
 
@@ -151,7 +154,7 @@ class Server(object):
         print msg
         connection_id, msg = msg
         print "<SERVER> Received_from_Client: ", msg
-        self.frontend.socket.send_multipart([connection_id, "PING-OK"])
+        self.frontend._socket.send_multipart([connection_id, "PING-OK"])
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -173,7 +176,7 @@ class Server(object):
         """
         print "<SERVER> Received_from_App: ", msg
         connection_id, msg = msg
-        self.backend.socket.send_multipart([connection_id, "PING-APP-OK"])
+        self.backend._socket.send_multipart([connection_id, "PING-APP-OK"])
 
     ########################### End of callbacks. #############################
 
@@ -181,11 +184,16 @@ class Server(object):
         """
         Method to stop the server and make a clean exit.
         """
+        # TODO: First complete any pending tasks in self.dataset and
+        # send "TERM" signal to connected components.
+
         # First Disconnect Clients then Application.
-        self.frontend.socket.close()
-        self.publisher.socket.close()
-        self.backend.socket.close()
-        self.context.term()
+        self._loop.stop()
+        self.frontend.close()
+        self.publisher.close()
+        self.backend.close()
+        self._context.destroy()
         self.frontend = None
-        self.context = None
+        self._context = None
+        self.dataset = []
 

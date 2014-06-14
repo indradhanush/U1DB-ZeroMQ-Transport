@@ -6,24 +6,21 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
-from zmq_transport.common.message import SourceRequestMsg, TargetResponseMsg
+from zmq_transport.common.zmq_base import ZMQBaseSocket
 
-
-class ClientSocket(object):
+class ClientSocket(ZMQBaseSocket):
     """
     Base class for sockets at the client.
     """
     def __init__(self, socket, endpoint):
-        self.socket = socket
-        self.socket.setsockopt(zmq.RCVTIMEO, 10)
-        self.endpoint = endpoint
+        ZMQBaseSocket.__init__(self, socket, endpoint)
+        self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
     def run(self):
         """
         Initiates the socket connection to the server at self.endpoint;
-        Recommended: Override in sub-class.
         """
-        self.socket.connect(self.endpoint)
+        self._socket.connect(self.endpoint)
 
 
 class Speaker(ClientSocket):
@@ -65,7 +62,7 @@ class Subscriber(ClientSocket):
         :param msg_type: <type: binary string> <default: b''> - Type of message
         to subscribe to.
         """
-        self.socket.setsockopt(zmq.SUBSCRIBE, b"%s" % (msg_type))
+        self._socket.setsockopt(zmq.SUBSCRIBE, b"%s" % (msg_type))
 
     def unsubscribe(self, msg_type):
         """
@@ -73,13 +70,13 @@ class Subscriber(ClientSocket):
 
         :param msg_type: <type: binary string> - Type of message to subscribe to.
         """
-        self.socket.setsockopt(zmq.UNSUBSCRIBE, msg_type)
+        self._socket.setsockopt(zmq.UNSUBSCRIBE, msg_type)
 
     def recv(self):
         """
         Receive Updates from zmq.PUB socket.
         """
-        return self.socket.recv_multipart()
+        return self._socket.recv_multipart()
 
 
 class ZMQClientBase(object):
@@ -96,20 +93,23 @@ class ZMQClientBase(object):
         :type endpoint_publisher: str
         :returns: zmq_transport.client.ZMQClientBase instance.
         """
-        self.context = zmq.Context()
-        self.speaker = Speaker(endpoint_client_handler, self.context)
-        self.updates = Subscriber(endpoint_publisher, self.context)
+        self._context = zmq.Context()
+        self._loop = None
+        self.speaker = Speaker(endpoint_client_handler, self._context)
+        self.updates = Subscriber(endpoint_publisher, self._context)
         self.dataset = []
-        self.loop = IOLoop.instance()
 
-        # Wrapping zmq sockets in ZMQStream for IOLoop handlers.
-        self.speaker.socket = ZMQStream(self.speaker.socket)
-        self.updates.socket = ZMQStream(self.updates.socket)
-
-        # Registering callback handlers.
-        self.speaker.socket.on_send(self.handle_snd_update)
-        self.speaker.socket.on_recv(self.handle_rcv_update)
-        self.updates.socket.on_recv(self.handle_rcv_update)
+    def _prepare_reactor(self):
+        """
+        Prepares the reactor by wrapping sockets over ZMQStream and registering
+        handlers.
+        """
+        self._loop = IOLoop.instance()
+        self.speaker.wrap_zmqstream()
+        self.updates.wrap_zmqstream()
+        self.speaker.register_handler("on_send", self.handle_snd_update)
+        self.speaker.register_handler("on_recv", self.handle_rcv_update)
+        self.updates.register_handler("on_recv", self.handle_rcv_update)
         self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def start(self):
@@ -117,14 +117,15 @@ class ZMQClientBase(object):
         Method to start the client.
         """
         # Start Dealer and Subscriber instances.
+        self._prepare_reactor()
         self.speaker.run()
-        self.speaker.socket.send("PING")
+        self.speaker._socket.send("PING")
         self.updates.run()
         self.updates.subscribe(b"A")
 
         self.check_updates_callback.start()
         try:
-            self.loop.start()
+            self._loop.start()
         except KeyboardInterrupt:
             print "<CLIENT> Interrupted."
 
@@ -160,7 +161,7 @@ class ZMQClientBase(object):
             for data in self.dataset:
                 # TODO: Converting to str now. Will do some
                 # serialization with message structures later.
-                self.speaker.socket.send_multipart([data])
+                self.speaker._socket.send_multipart([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################
@@ -169,9 +170,9 @@ class ZMQClientBase(object):
         """
         Method to stop the client and make a clean exit.
         """
-        self.speaker.socket.close()
-        self.updates.socket.close()
-        self.context.term()
+        self.speaker._socket.close()
+        self.updates._socket.close()
+        self._context.term()
         self.speaker = None
-        self.context = None
+        self._context = None
 

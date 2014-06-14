@@ -6,9 +6,9 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
+from zmq_transport.common.zmq_base import ZMQBaseSocket
 
-
-class ApplicationSocket(object):
+class ApplicationSocket(ZMQBaseSocket):
     """
     Base class for sockets at SOLEDAD.
     """
@@ -19,18 +19,18 @@ class ApplicationSocket(object):
         :param endpoint: Endpoint to bind or connect the socket to.
         :type endpoint: str
         """
-        self._socket = socket
-        self._endpoint = endpoint
+        ZMQBaseSocket.__init__(self, socket, endpoint)
 
-    def run(self):
-        """
-        Initiates socket connections. Base class implementations must over
-        ride
-        this method.
-        """
-        pass
+    # def run(self):
+    #     """
+    #     Initiates socket connections. Base class implementations must over
+    #     ride
+    #     this method.
+    #     """
+    #     pass
 
-# TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on. 
+
+# TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on.
 # See: IRC logs: http://bit.ly/1tczZJC
 # TODO: Or a ROUTER/DEALER combo. 
 # See: IRC logs: http://bit.ly/1ijJxNJ
@@ -62,28 +62,32 @@ class Application(object):
     """
     def __init__(self, endpoint):
         """
-        Initialze instance of type Application.
+        Initialize instance of type Application.
 
         :param endpoint: Endpoint of Server.
         :type endpoint: str
         """
         self._context = zmq.Context()
-        self._loop = IOLoop.instance()
+        self._loop = None
         self.server_handler = ServerHandler(endpoint, self._context)
         self.dataset = []
 
-        # Wrapping zmq socket in ZMQStream for IOLoop handlers.
-        self.server_handler._socket = ZMQStream(self.server_handler._socket)
-
-        # Registering callback handlers.
-        self.server_handler._socket.on_send(self.handle_snd_update)
-        self.server_handler._socket.on_recv(self.handle_rcv_update)
+    def _prepare_reactor(self):
+        """
+        Prepares the reactor by wrapping sockets over ZMQStream and registering
+        handlers.
+        """
+        self._loop = IOLoop.instance()
+        self.server_handler.wrap_zmqstream()
+        self.server_handler.register_handler("on_send", self.handle_snd_update)
+        self.server_handler.register_handler("on_recv", self.handle_rcv_update)
         self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def start(self):
         """
         Method to start the application.
         """
+        self._prepare_reactor()
         self.server_handler.run()
         self.server_handler._socket.send("PING-APP")
         self.check_updates_callback.start()
@@ -122,7 +126,6 @@ class Application(object):
         """
         Method to regularly check new updates in self.dataset
         """
-
         if self.dataset:
             for data in self.dataset:
                 print data
@@ -131,6 +134,21 @@ class Application(object):
 
     ########################### End of callbacks. #############################
 
+    def stop(self):
+        """
+        :param socket: ZeroMQ socket.
+        :type: zmq.context.socket instance.
+        :param endpoint: Endpoint to bind or connect the socket to.
+        :type endpoint: str
+        """
+        # TODO: First complete any pending tasks in self.dataset and
+        # send "TERM" signal to connected components.
+        self._loop.stop()
+        self.server_handler.close()
+        self._context.destroy()
+        self.server_handler = None
+        self._context = None
+        self.dataset = []
 
 def simulator(socket, n):
     """Simulates updates to Publisher. For testing purposes."""
