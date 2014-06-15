@@ -89,7 +89,7 @@ class Application(ZMQBaseComponent):
         """
         self._prepare_reactor()
         self.server_handler.run()
-        self.server_handler._socket.send("PING-APP")
+        self.server_handler.send(["PING-APP"])
         self.check_updates_callback.start()
         # Random data for test.
         self.dataset = ["DATA - %d" % (i) for i in range(1, 10)]
@@ -129,7 +129,7 @@ class Application(ZMQBaseComponent):
         if self.dataset:
             for data in self.dataset:
                 print data
-                self.server_handler._socket.send_multipart([data])
+                self.server_handler.send([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################

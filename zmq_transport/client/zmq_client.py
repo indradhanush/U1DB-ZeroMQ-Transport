@@ -147,7 +147,7 @@ class ZMQClientBase(ZMQBaseComponent):
         # Start Dealer and Subscriber instances.
         self._prepare_reactor()
         self.speaker.run()
-        self.speaker._socket.send("PING")
+        self.speaker.send(["PING"])
         self.updates.run()
         self.updates.subscribe("USER1")
 
@@ -199,7 +199,7 @@ class ZMQClientBase(ZMQBaseComponent):
             for data in self.dataset:
                 # TODO: Converting to str now. Will do some
                 # serialization with message structures later.
-                self.speaker._socket.send_multipart([data])
+                self.speaker.send([data])
                 self.dataset.remove(data)
 
     ########################### End of callbacks. #############################

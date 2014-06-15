@@ -42,23 +42,18 @@ class ZMQBaseSocket(object):
         assert isinstance(self._socket, ZMQStream), "Not a ZMQStream socket."
         getattr(self._socket, method)(callback)
 
-    # def send(self, msg):
-    #     """
-    #     Wrapper over "socket.send()".
+    def send(self, msg):
+        """
+        Wrapper over "socket.send_multipart()".
 
-    #     :param msg: Message to be sent.
-    #     :type msg: str
-    #     """
-    #     raise NotImplementedError(self.send)
-
-    # def send_multipart(self, msg):
-    #     """
-    #     Wrapper over "socket.send_multipart()".
-
-    #     :param msg: Message to be sent.
-    #     :type msg: str
-    #     """
-    #     raise NotImplementedError(self.send_multipart)
+        :param msg: Message to be sent.
+        :type msg: list
+        """
+        # Performing type checking as it is fairly easy to just send a
+        # str in param msg.
+        if not isinstance(msg, list):
+            raise TypeError("param msg expected of <type 'list'>. Found %s." % (type(msg)))
+        self._socket.send_multipart(msg)
 
     def close(self):
         """

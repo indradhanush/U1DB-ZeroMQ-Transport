@@ -105,14 +105,6 @@ class Publisher(ServerSocket):
         """
         ServerSocket.run(self)
 
-    def send(self, kvmsg):
-        """
-        Send updates via zmq.PUB socket.
-        :param kvmsg: KeyValueMsg instance.
-        """
-        assert(isinstance(kvmsg, KeyValueMsg))
-        self._socket.send_multipart([ kvmsg.key, kvmsg.body ])
-
 
 class Server(ZMQBaseComponent):
     """
@@ -192,7 +184,7 @@ class Server(ZMQBaseComponent):
         subscription = proto.SubscribeRequest()
         subscription.key = key
         key = subscription.SerializeToString()
-        self.publisher._socket.send_multipart([key, msg])
+        self.publisher.send([key, msg])
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -214,7 +206,7 @@ class Server(ZMQBaseComponent):
         """
         print "<SERVER> Received_from_App: ", msg
         connection_id, msg = msg
-        self.backend._socket.send_multipart([connection_id, "PING-APP-OK"])
+        self.backend.send([connection_id, "PING-APP-OK"])
 
     ########################### End of callbacks. #############################
 
