@@ -7,6 +7,7 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
+from zmq_transport.common import message_pb2 as proto
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -187,7 +188,11 @@ class Server(ZMQBaseComponent):
         print msg
         connection_id, msg = msg
         print "<SERVER> Received_from_Client: ", msg
-        self.frontend._socket.send_multipart([connection_id, "PING-OK"])
+        key = "USER1"
+        subscription = proto.SubscribeRequest()
+        subscription.key = key
+        key = subscription.SerializeToString()
+        self.publisher._socket.send_multipart([key, msg])
 
     def handle_snd_update_app(self, msg, status):
         """

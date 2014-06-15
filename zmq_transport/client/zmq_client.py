@@ -7,6 +7,9 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 from zmq_transport.config import settings
 from zmq_transport.common.message import KeyValueMsg
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
+from zmq_transport.common import message_pb2 as proto
+from zmq_transport.common.utils import serialize_msg, deserialize_msg
+
 
 class ClientSocket(ZMQBaseSocket):
     """
@@ -80,14 +83,15 @@ class Subscriber(ClientSocket):
         """
         ClientSocket.run(self)
 
-    def subscribe(self, msg_type=b''):
+    def subscribe(self, msg_type):
         """
         Subscribes the client to msg_type.
 
-        :param msg_type: <type: binary string> <default: b''> - Type of message
-        to subscribe to.
+        :param msg_type: Subscription Message Key
+        :type msg_type: str
         """
-        self._socket.setsockopt(zmq.SUBSCRIBE, b"%s" % (msg_type))
+        msg = serialize_msg("SubscribeRequest", key=msg_type)
+        self._socket.setsockopt(zmq.SUBSCRIBE, msg)
 
     def unsubscribe(self, msg_type):
         """
@@ -95,7 +99,8 @@ class Subscriber(ClientSocket):
 
         :param msg_type: <type: binary string> - Type of message to subscribe to.
         """
-        self._socket.setsockopt(zmq.UNSUBSCRIBE, msg_type)
+        msg = serialize_msg("UnsubscribeRequest", key="msg_type")
+        self._socket.setsockopt(zmq.UNSUBSCRIBE, msg)
 
     def recv(self):
         """
@@ -132,7 +137,7 @@ class ZMQClientBase(ZMQBaseComponent):
         self.updates.wrap_zmqstream()
         self.speaker.register_handler("on_send", self.handle_snd_update)
         self.speaker.register_handler("on_recv", self.handle_rcv_update)
-        self.updates.register_handler("on_recv", self.handle_rcv_update)
+        self.updates.register_handler("on_recv", self.handle_pub_update)
         self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def start(self):
@@ -144,7 +149,7 @@ class ZMQClientBase(ZMQBaseComponent):
         self.speaker.run()
         self.speaker._socket.send("PING")
         self.updates.run()
-        self.updates.subscribe(b"A")
+        self.updates.subscribe("USER1")
 
         self.check_updates_callback.start()
         try:
@@ -175,6 +180,16 @@ class ZMQClientBase(ZMQBaseComponent):
         """
         print "<CLIENT> Received: ", msg[0]
         self.dataset.append(msg[0])
+
+    def handle_pub_update(self, msg):
+        """
+        Callback after updates have been revieved from PUB socket.
+        """
+        print msg
+        key, msg = msg
+        subscription = proto.SubscribeRequest()
+        subscription.ParseFromString(key)
+        print "<PUBLISHER> Key: ", subscription.key, msg
 
     def check_updates(self):
         """
