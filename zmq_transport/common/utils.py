@@ -20,7 +20,7 @@ def serialize_msg(protobuf_type, **kwargs):
     :returns: A serialized string created out of protobuf_type message structure.
     :type: str
     """
-    msg_struct = getattr(proto, protobuf_type)
+    msg_struct = getattr(proto, protobuf_type)()
     for key, value in kwargs.items():
         setattr(msg_struct, key, value)
 
