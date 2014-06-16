@@ -23,31 +23,143 @@ message UnsubscribeRequest {
 }
 
 
-// A SourceRequest message tells the target about the sync request.
-message SourceRequest {
+// A SyncType message identifies the exact part of a sync process.
+message SyncType {
+    required string sync_type = 1;
+}
+
+
+// A ZMQVerb message simulates HTTP verbs.
+// Note: Its not an extensive one. Simulates only the ones required by the u1db
+// sync protocol.
+message ZMQVerb {
+    enum Verb {
+        GET = 0;
+        POST = 1;
+        PUT = 2;
+        DELETE = 3;
+    }
+
+    required Verb verb = 1;
+}
+
+
+// A GetSyncInfoRequest message tells the target about its current sync state.
+message GetSyncInfoRequest {
     required string source_replica_uid = 1;
-    required string source_replica_generation = 2 ;
-    required string source_replica_trans_id = 3;
-    required string target_replica_last_known_generation = 4;
-    required string target_replica_last_known_trans_id = 5;
-    required string doc_id = 6;
-    required string doc_rev = 7;
-    required string doc_content = 8;
+    required string sync_id = 2;
 }
 
 
-// A TargetResponse message is a response of a SourceRequest message from a
-// source.
-message TargetResponse {
+// A GetSyncInfoResponse message tells the source about its current sync state
+// and the last sync state of source the target knows about.
+message GetSyncInfoResponse {
+
+    // Current target replica information.
     required string target_replica_uid = 1;
-    required string target_replica_generation = 2;
+    required int32 target_replica_generation = 2;
     required string target_replica_trans_id = 3;
+
+    // Target information about souce replica.
+    required int32 source_last_known_generation = 4;
+    required string source_last_known_trans_id = 5;
 }
 
 
-// A PublisherUpdate message is message send from the PUB socket.
-message PublisherUpdate {
-    required string key = 1;
-    // TODO: Need a param to accomodate message structures.
+// A SendDocumentRequest message contains a document to be synced.
+message SendDocumentRequest {
+    required string source_replica_uid = 1;
+    required string sync_id = 2;
+
+    // Document information.
+    required string doc_id = 3;
+    required int32 doc_generation = 4;
+    required string doc_content = 5;
+
+    // Source replica transaction log for the above document.
+    required int32 source_generation = 6;
+    required string source_trans_id = 7;
+}
+
+
+// A SendDocumentResponse message informs the source about a successful sync of an
+// individual document.
+message SendDocumentResponse {
+    required string source_trans_id = 1;
+    required bool inserted = 2;
+}
+
+// A GetDocumentRequest message is sent from source to get the documents that
+// were changed in the target since their last sync.
+message GetDocumentRequest {
+    required string source_replica_uid = 1;
+    required string sync_id = 2;
+    required int32  docs_received_count = 3;
+}
+
+
+// A GetDocumentResponse message returns a document to the source for sync.
+message GetDocumentResponse {
+
+    // Document information.
+    required string doc_id = 1;
+    required int32 doc_generation = 2;
+    required string doc_content = 3;
+
+    // Target replica transaction for the current document.
+    required int32 target_generation = 4;
+    required string target_trans_id = 5;
+}
+
+
+// A PutSyncInfoRequest message is used to record the current sync state of the
+// source with the target.
+message PutSyncInfoRequest {
+    required string sync_id = 1;
+    required string source_replica_uid = 2;
+    required int32 source_generation = 3;
+    required string source_trans_id = 4;
+}
+
+
+// A PutSyncInfoResponse message is confirms a successful PutSyncInfoRequest.
+message PutSyncInfoResponse {
+    required string source_trans_id = 1;
+    required bool inserted = 2;
+}
+
+
+// A Identifier message is a message that identifies the type of messages being
+// sent and also contains the message itself.
+message Identifier {
+    enum Type {
+        SUBSCRIBE_REQUEST = 1;
+        UNSUBSCRIBE_REQUEST = 2;
+        SYNC_TYPE = 3;
+        ZMQ_VERB = 4;
+        GET_SYNC_INFO_REQUEST = 5;
+        GET_SYNC_INFO_RESPONSE = 6;
+        SEND_DOCUMENT_REQUEST = 7;
+        SEND_DOCUMENT_RESPONSE = 8;
+        GET_DOCUMENT_REQUEST = 9;
+        GET_DOCUMENT_RESPONSE = 10;
+        PUT_SYNC_INFO_REQUEST = 11;
+        PUT_SYNC_INFO_RESPONSE = 12;
+    }
+
+    required Type type = 1;
+
+    optional SubscribeRequest subscribe_request = 2;
+    optional UnsubscribeRequest unsubscribe_request = 3;
+    optional SyncType sync_type = 4;
+    optional ZMQVerb zmq_verb = 5;
+    optional GetSyncInfoRequest get_sync_info_request = 6;
+    optional GetSyncInfoResponse get_sync_info_response= 7;
+    optional SendDocumentRequest send_document_request = 8;
+    optional SendDocumentResponse send_document_response = 9;
+    optional GetDocumentRequest get_document_request = 10;
+    optional GetDocumentResponse get_document_response = 11;
+    optional PutSyncInfoRequest put_sync_info_request = 12;
+    optional PutSyncInfoResponse put_sync_info_response = 13;
 }
 

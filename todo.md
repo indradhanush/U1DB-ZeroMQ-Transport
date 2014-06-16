@@ -44,3 +44,12 @@ discuss
 * __IMPORTANT:__ Add authentication wrapper over `Publisher.subscribe()` and
   `Publisher.unsubscribe()` methods. Probably make this wrapper as a
   decorator for easier patching of other functions.
+
+* __IMPORTANT:__ Find a way for
+  `zmq_transport.u1db.zmq_target.ZMQSyncTarget.get_sync_info` to
+  return the response after the request. Or else backwards
+  compatibility is broken.
+
+* Might rename package `zmq_transport` into `zmtp`. Concise. Sounds
+  better. :)
+

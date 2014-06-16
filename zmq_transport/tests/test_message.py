@@ -1,0 +1,285 @@
+# System Imports
+import unittest
+
+# Local Imports
+from zmq_transport.common import message_pb2 as proto
+from zmq_transport.common.utils import *
+
+
+class BaseMessageTest(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        self.msg_struct = None
+
+    def tearDown(self):
+        self.msg_struct = None
+
+
+class SubscribeRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_subscribe_request_msg(key="TEST")
+
+    def test_create_subscribe_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.SubscribeRequest)
+        self.assertEqual(self.msg_struct.key, "TEST")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.SubscribeRequest)
+        self.assertEqual(self.msg_struct.key, parsed_msg_struct.key)
+
+
+class UnsubscribeRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_unsubscribe_request_msg(key="TEST")
+
+    def test_create_unsubscribe_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.UnsubscribeRequest)
+        self.assertEqual(self.msg_struct.key, "TEST")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.UnsubscribeRequest)
+        self.assertEqual(self.msg_struct.key, parsed_msg_struct.key)
+
+
+class SyncTypeTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_sync_type_msg(sync_type="TEST")
+
+    def test_create_sync_type_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.SyncType)
+        self.assertEqual(self.msg_struct.sync_type, "TEST")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.SyncType)
+        self.assertEqual(self.msg_struct.sync_type,
+                         parsed_msg_struct.sync_type)
+
+
+class ZMQVerbTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.GET)
+
+    def test_create_zmq_verb_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.ZMQVerb)
+        self.assertEqual(self.msg_struct.verb, proto.ZMQVerb.GET)
+        self.msg_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.POST)
+        self.assertEqual(self.msg_struct.verb, proto.ZMQVerb.POST)
+        self.msg_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.PUT)
+        self.assertEqual(self.msg_struct.verb, proto.ZMQVerb.PUT)
+        self.msg_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.DELETE)
+        self.assertEqual(self.msg_struct.verb, proto.ZMQVerb.DELETE)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.ZMQVerb)
+        self.assertEqual(self.msg_struct.verb, parsed_msg_struct.verb)
+
+
+class GetSyncInfoRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_get_sync_info_request_msg(
+            source_replica_uid="UID1", sync_id="SYNC1")
+        
+    def test_create_get_sync_info_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.GetSyncInfoRequest)
+        self.assertEqual(self.msg_struct.source_replica_uid, "UID1")
+        self.assertEqual(self.msg_struct.sync_id, "SYNC1")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.GetSyncInfoRequest)
+        self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
+        self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
+
+
+class GetSyncInfoResponseTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_get_sync_info_response_msg(
+            target_replica_uid="T-UID", target_replica_generation=1,
+            target_replica_trans_id="TRANS-ID", source_last_known_generation=2,
+            source_last_known_trans_id = "LAST_TRANS_ID")
+
+    def test_create_get_sync_info_response_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.GetSyncInfoResponse)
+        self.assertEqual(self.msg_struct.target_replica_uid, "T-UID")
+        self.assertEqual(self.msg_struct.target_replica_generation, 1)
+        self.assertEqual(self.msg_struct.target_replica_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_last_known_generation, 2)
+        self.assertEqual(self.msg_struct.source_last_known_trans_id,
+                         "LAST_TRANS_ID")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.GetSyncInfoResponse)
+        self.assertEqual(parsed_msg_struct.target_replica_uid, "T-UID")
+        self.assertEqual(parsed_msg_struct.target_replica_generation, 1)
+        self.assertEqual(parsed_msg_struct.target_replica_trans_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.source_last_known_generation, 2)
+        self.assertEqual(parsed_msg_struct.source_last_known_trans_id,
+                         "LAST_TRANS_ID")
+
+
+class SendDocumentRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_send_document_request_msg(
+            source_replica_uid="UID1", sync_id="SYNC1", doc_id="DOC1",
+            doc_generation=1, doc_content="Dummy text.", source_generation=2,
+            source_trans_id="TRANS-ID")
+
+    def test_create_send_document_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.SendDocumentRequest)
+        self.assertEqual(self.msg_struct.source_replica_uid, "UID1")
+        self.assertEqual(self.msg_struct.sync_id, "SYNC1")
+        self.assertEqual(self.msg_struct.doc_id, "DOC1")
+        self.assertEqual(self.msg_struct.doc_generation, 1)
+        self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
+        self.assertEqual(self.msg_struct.source_generation, 2)
+        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.SendDocumentRequest)
+        self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
+        self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
+        self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
+        self.assertEqual(parsed_msg_struct.doc_generation, 1)
+        self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
+        self.assertEqual(parsed_msg_struct.source_generation, 2)
+        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+
+
+class SendDocumentResponseTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_send_document_response_msg(
+            source_trans_id="TRANS-ID", inserted=True)
+
+    def test_create_send_document_response_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.SendDocumentResponse)
+        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.inserted, True)
+        self.msg_struct.inserted = False
+        self.assertEqual(self.msg_struct.inserted, False)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.SendDocumentResponse)
+        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.inserted, True)
+
+
+class GetDocumentRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_get_document_request_msg(
+            source_replica_uid="REP-UID", sync_id="SYNC1",
+            docs_received_count=2)
+
+    def test_create_get_document_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.GetDocumentRequest)
+        self.assertEqual(self.msg_struct.source_replica_uid, "REP-UID")
+        self.assertEqual(self.msg_struct.sync_id, "SYNC1")
+        self.assertEqual(self.msg_struct.docs_received_count, 2)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.GetDocumentRequest)
+        self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-UID")
+        self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
+        self.assertEqual(parsed_msg_struct.docs_received_count, 2)
+
+
+class GetDocumentResponseTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_get_document_response_msg(
+            doc_id="DOC1", doc_generation=1, doc_content="Dummy text.",
+            target_generation=2, target_trans_id="TAR-ID")
+
+    def test_create_get_document_response_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.GetDocumentResponse)
+        self.assertEqual(self.msg_struct.doc_id, "DOC1")
+        self.assertEqual(self.msg_struct.doc_generation, 1)
+        self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
+        self.assertEqual(self.msg_struct.target_generation, 2)
+        self.assertEqual(self.msg_struct.target_trans_id, "TAR-ID")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.GetDocumentResponse)
+        self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
+        self.assertEqual(parsed_msg_struct.doc_generation, 1)
+        self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
+        self.assertEqual(parsed_msg_struct.target_generation, 2)
+        self.assertEqual(parsed_msg_struct.target_trans_id, "TAR-ID")
+
+
+class PutSyncInfoRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_put_sync_info_request_msg(
+            sync_id="SYNC1", source_replica_uid="REP-ID", source_generation=1,
+            source_trans_id="TRANS-ID")
+
+    def test_create_put_sync_info_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.PutSyncInfoRequest)
+        self.assertEqual(self.msg_struct.sync_id, "SYNC1")
+        self.assertEqual(self.msg_struct.source_replica_uid, "REP-ID")
+        self.assertEqual(self.msg_struct.source_generation, 1)
+        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoRequest)
+        self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
+        self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-ID")
+        self.assertEqual(parsed_msg_struct.source_generation, 1)
+        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+
+
+class PutSyncInfoResponseTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_put_sync_info_response_msg(
+            source_trans_id="TRANS-ID", inserted=True)
+
+    def test_create_put_sync_info_response_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.PutSyncInfoResponse)
+        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.inserted, True)
+        self.msg_struct.inserted = False
+        self.assertEqual(self.msg_struct.inserted, False)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoResponse)
+        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.inserted, True)
+
+
+class IdentifierTest(BaseMessageTest):
+    pass
+
