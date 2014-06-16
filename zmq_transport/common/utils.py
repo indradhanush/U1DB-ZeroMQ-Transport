@@ -40,7 +40,7 @@ def deserialize_msg(protobuf_type, msg):
     zmq_transport.common.message_pb2 module.
     :type: Intance of one of zmq_transport.common.message_pb2
     """
-    msg_struct = getattr(proto, protobuf)
+    msg_struct = getattr(proto, protobuf_type)()
     msg_struct.ParseFromString(msg)
     return msg_struct
 
