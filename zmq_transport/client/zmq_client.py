@@ -204,12 +204,12 @@ class ZMQClientBase(ZMQBaseComponent):
 
     ########################### End of callbacks. #############################
 
-    def stop(sel):
+    def stop(self):
         """
         Method to stop the client and make a clean exit.
         """
-        self.speaker._socket.close()
-        self.updates._socket.close()
+        self.speaker.close()
+        self.updates.close()
         self._context.term()
         self.speaker = None
         self._context = None
