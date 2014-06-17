@@ -17,10 +17,12 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
 
     :returns: A protobuf message struct.
     """
-    return getattr(proto, protobuf_type)()
+    msg_struct = getattr(proto, protobuf_type)()
+    for key, value in kwargs.items():
+        setattr(msg_struct, key, value)
+    return msg_struct
 
-
-def create_subscribe_request_msg(*kwargs):
+def create_subscribe_request_msg(**kwargs):
     """
     Creates a zmq_transport.common.message_pb2.SubscribeRequest message structure.
 
@@ -30,10 +32,10 @@ def create_subscribe_request_msg(*kwargs):
 
     :returns: zmq_transport.common.message_pb2.SubscribeRequest instance.
     """
-    return _create_protobuf_msg("SubscribeRequest", kwargs)
+    return _create_protobuf_msg("SubscribeRequest", **kwargs)
 
 
-def create_unsubscribe_request_msg(*kwargs):
+def create_unsubscribe_request_msg(**kwargs):
     """
     Creates a zmq_transport.common.message_pb2.UnsubscribeRequest message structure.
 
@@ -43,7 +45,7 @@ def create_unsubscribe_request_msg(*kwargs):
 
     :returns: zmq_transport.common.message_pb2.UnsubscribeRequest instance.
     """
-    return _create_protobuf_msg("UnsubscribeRequest", kwargs)
+    return _create_protobuf_msg("UnsubscribeRequest", **kwargs)
 
 
 def create_sync_type_msg(**kwargs):
@@ -56,7 +58,7 @@ def create_sync_type_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.SyncType instance.
     """
-    return _create_protobuf_msg("SyncType", kwargs)
+    return _create_protobuf_msg("SyncType", **kwargs)
 
 
 def create_zmq_verb_msg(**kwargs):
@@ -69,7 +71,7 @@ def create_zmq_verb_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.ZMQVerb instance.
     """
-    return _create_protobuf_msg("ZMQVerb", kwargs)
+    return _create_protobuf_msg("ZMQVerb", **kwargs)
 
 
 def create_get_sync_info_request_msg(**kwargs):
@@ -82,7 +84,7 @@ def create_get_sync_info_request_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.GetSyncInfoRequest instance.
     """
-    return _create_protobuf_msg("GetSyncInfoRequest", kwargs)
+    return _create_protobuf_msg("GetSyncInfoRequest", **kwargs)
 
 
 def create_get_sync_info_response_msg(**kwargs):
@@ -95,7 +97,7 @@ def create_get_sync_info_response_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.GetSyncInfoResponse instance.
     """
-    return _create_protobuf_msg("GetSyncInfoResponse", kwargs)
+    return _create_protobuf_msg("GetSyncInfoResponse", **kwargs)
 
 
 def create_send_document_request_msg(**kwargs):
@@ -108,7 +110,7 @@ def create_send_document_request_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.SyncDocumentRequest instance.
     """
-    return _create_protobuf_msg("SyncDocumentRequest", kwargs)
+    return _create_protobuf_msg("SendDocumentRequest", **kwargs)
 
 
 def create_send_document_response_msg(**kwargs):
@@ -121,7 +123,7 @@ def create_send_document_response_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.SyncDocumentResponse instance.
     """
-    return _create_protobuf_msg("SyncDocumentResponse", kwargs)
+    return _create_protobuf_msg("SendDocumentResponse", **kwargs)
 
 
 def create_get_document_request_msg(**kwargs):
@@ -134,7 +136,7 @@ def create_get_document_request_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.GetDocumentRequest instance.
     """
-    return _create_protobuf_msg("GetDocumentRequest", kwargs)
+    return _create_protobuf_msg("GetDocumentRequest", **kwargs)
 
 
 def create_get_document_response_msg(**kwargs):
@@ -147,7 +149,7 @@ def create_get_document_response_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.GetDocumentResponse instance.
     """
-    return _create_protobuf_msg("GetDocumentResponse", kwargs)
+    return _create_protobuf_msg("GetDocumentResponse", **kwargs)
 
 
 def create_put_sync_info_request_msg(**kwargs):
@@ -160,7 +162,7 @@ def create_put_sync_info_request_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.PutSyncInfoRequest instance.
     """
-    return _create_protobuf_msg("PutSyncInfoRequest", kwargs)
+    return _create_protobuf_msg("PutSyncInfoRequest", **kwargs)
 
 
 def create_put_sync_info_response_msg(**kwargs):
@@ -173,7 +175,7 @@ def create_put_sync_info_response_msg(**kwargs):
 
     :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse instance.
     """
-    return _create_protobuf_msg("PutSyncInfoResponse", kwargs)
+    return _create_protobuf_msg("PutSyncInfoResponse", **kwargs)
 
 
 def serialize_msg(msg_struct):
