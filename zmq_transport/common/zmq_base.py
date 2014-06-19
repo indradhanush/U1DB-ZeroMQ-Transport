@@ -55,6 +55,15 @@ class ZMQBaseSocket(object):
             raise TypeError("param msg expected of <type 'list'>. Found %s." % (type(msg)))
         self._socket.send_multipart(msg)
 
+    def recv(self):
+        """
+        Wrapper over "socket.recv_multipart()".
+
+        :returns: Received message.
+        :type: list
+        """
+        return self._socket.recv_multipart()
+
     def close(self):
         """
         Wrapper to close the socket.

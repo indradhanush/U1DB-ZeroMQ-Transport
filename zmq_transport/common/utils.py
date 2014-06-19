@@ -1,6 +1,8 @@
 """
 Common Utilities.
 """
+# System Imports
+import uuid
 
 # Local Imports
 from zmq_transport.common import message_pb2 as proto
@@ -24,7 +26,8 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
 
 def create_subscribe_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.SubscribeRequest message structure.
+    Creates a zmq_transport.common.message_pb2.SubscribeRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of SubscribeRequest message structure.
@@ -37,7 +40,8 @@ def create_subscribe_request_msg(**kwargs):
 
 def create_unsubscribe_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.UnsubscribeRequest message structure.
+    Creates a zmq_transport.common.message_pb2.UnsubscribeRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of UnsubscribeRequest message structure.
@@ -76,7 +80,8 @@ def create_zmq_verb_msg(**kwargs):
 
 def create_get_sync_info_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.GetSyncInfoRequest message structure.
+    Creates a zmq_transport.common.message_pb2.GetSyncInfoRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of GetSyncInfoRequest message structure.
@@ -89,7 +94,8 @@ def create_get_sync_info_request_msg(**kwargs):
 
 def create_get_sync_info_response_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.GetSyncInfoResponse message structure.
+    Creates a zmq_transport.common.message_pb2.GetSyncInfoResponse message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of GetSyncInfoResponse message structure.
@@ -102,7 +108,8 @@ def create_get_sync_info_response_msg(**kwargs):
 
 def create_send_document_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.SyncDocumentRequest message structure.
+    Creates a zmq_transport.common.message_pb2.SyncDocumentRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of SyncDocumentRequest message structure.
@@ -115,7 +122,8 @@ def create_send_document_request_msg(**kwargs):
 
 def create_send_document_response_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.SyncDocumentResponse message structure.
+    Creates a zmq_transport.common.message_pb2.SyncDocumentResponse message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of SyncDocumentResponse message structure.
@@ -128,7 +136,8 @@ def create_send_document_response_msg(**kwargs):
 
 def create_get_document_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.GetDocumentRequest message structure.
+    Creates a zmq_transport.common.message_pb2.GetDocumentRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of GetDocumentRequest message structure.
@@ -141,7 +150,8 @@ def create_get_document_request_msg(**kwargs):
 
 def create_get_document_response_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.GetDocumentResponse message structure.
+    Creates a zmq_transport.common.message_pb2.GetDocumentResponse message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of GetDocumentResponse message structure.
@@ -154,7 +164,8 @@ def create_get_document_response_msg(**kwargs):
 
 def create_put_sync_info_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.PutSyncInfoRequest message structure.
+    Creates a zmq_transport.common.message_pb2.PutSyncInfoRequest message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of PutSyncInfoRequest message structure.
@@ -167,7 +178,8 @@ def create_put_sync_info_request_msg(**kwargs):
 
 def create_put_sync_info_response_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.PutSyncInfoResponse message structure.
+    Creates a zmq_transport.common.message_pb2.PutSyncInfoResponse message
+    structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
     their respective values of PutSyncInfoResponse message structure.
@@ -196,7 +208,7 @@ def deserialize_msg(msg_struct, msg):
     Parses a msg string and fills it into an instance of msg_struct.
 
     :param msg_struct: Type of message structure
-    :type msg_struct: A protobuf message instance.
+    :type msg_struct: str
     :param msg: Message to be parsed.
     :type msg: str
 
@@ -204,6 +216,17 @@ def deserialize_msg(msg_struct, msg):
     zmq_transport.common.message_pb2 module.
     :type: Instance of one of zmq_transport.common.message_pb2
     """
+    msg_struct = getattr(proto, msg_struct)()
     msg_struct.ParseFromString(msg)
     return msg_struct
+
+
+def get_sync_id():
+    """
+    Helper function to generate a unique sync_id.
+
+    :returns: A unique id generated from uuid.uuid4
+    :type: str
+    """
+    return str(uuid.uuid4())
 

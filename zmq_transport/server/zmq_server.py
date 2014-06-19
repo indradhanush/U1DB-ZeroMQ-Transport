@@ -5,7 +5,6 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
 from zmq_transport.config import settings
-from zmq_transport.common.message import KeyValueMsg
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 
@@ -151,7 +150,6 @@ class Server(ZMQBaseComponent):
         self.frontend.run()
         self.backend.run()
         self.publisher.run()
-
         try:
             self._loop.start()
         except KeyboardInterrupt:
@@ -169,7 +167,7 @@ class Server(ZMQBaseComponent):
         :param status: return result of socket.send_multipart(msg)
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
-        print "<SERVER> Sent_to_Client: ", msg[1]
+        print "<SERVER> Sent_to_Client: ", msg
 
     def handle_rcv_update_client(self, msg):
         """
@@ -178,13 +176,9 @@ class Server(ZMQBaseComponent):
         :type msg: list
         """
         print msg
-        connection_id, msg = msg
-        print "<SERVER> Received_from_Client: ", msg
-        key = "USER1"
-        subscription = proto.SubscribeRequest()
-        subscription.key = key
-        key = subscription.SerializeToString()
-        self.publisher.send([key, msg])
+        # Message Format: [connection_id, request_id, delimiter_frame, msg]
+        connection_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
+        self.frontend.send([connection_id, request_id, "", "HELLO WORLD"])
 
     def handle_snd_update_app(self, msg, status):
         """

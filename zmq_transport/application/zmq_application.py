@@ -5,7 +5,6 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
 from zmq_transport.config import settings
-from zmq_transport.common.message import KeyValueMsg
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
 class ApplicationSocket(ZMQBaseSocket):

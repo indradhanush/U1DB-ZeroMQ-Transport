@@ -21,7 +21,7 @@ try:
 except ImportError:
     import json  # noqa
 
-from u1db.errors import InvalidJSON, InvalidContent
+from zmq_transport.u1db.errors import InvalidJSON, InvalidContent
 
 __version_info__ = (99, 12)
 __version__ = '.'.join(map(lambda x: '%02d' % x, __version_info__))

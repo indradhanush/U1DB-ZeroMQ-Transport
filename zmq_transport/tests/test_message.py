@@ -27,7 +27,7 @@ class SubscribeRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("SubscribeRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SubscribeRequest)
         self.assertEqual(self.msg_struct.key, parsed_msg_struct.key)
 
@@ -43,7 +43,7 @@ class UnsubscribeRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("UnsubscribeRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.UnsubscribeRequest)
         self.assertEqual(self.msg_struct.key, parsed_msg_struct.key)
 
@@ -59,7 +59,7 @@ class SyncTypeTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("SyncType", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SyncType)
         self.assertEqual(self.msg_struct.sync_type,
                          parsed_msg_struct.sync_type)
@@ -82,7 +82,7 @@ class ZMQVerbTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("ZMQVerb", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.ZMQVerb)
         self.assertEqual(self.msg_struct.verb, parsed_msg_struct.verb)
 
@@ -100,7 +100,7 @@ class GetSyncInfoRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("GetSyncInfoRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.GetSyncInfoRequest)
         self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
@@ -125,7 +125,7 @@ class GetSyncInfoResponseTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("GetSyncInfoResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.GetSyncInfoResponse)
         self.assertEqual(parsed_msg_struct.target_replica_uid, "T-UID")
         self.assertEqual(parsed_msg_struct.target_replica_generation, 1)
@@ -155,7 +155,7 @@ class SendDocumentRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("SendDocumentRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SendDocumentRequest)
         self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
@@ -181,7 +181,7 @@ class SendDocumentResponseTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("SendDocumentResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SendDocumentResponse)
         self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.inserted, True)
@@ -202,7 +202,7 @@ class GetDocumentRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("GetDocumentRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.GetDocumentRequest)
         self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
@@ -226,7 +226,7 @@ class GetDocumentResponseTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("GetDocumentResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.GetDocumentResponse)
         self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
         self.assertEqual(parsed_msg_struct.doc_generation, 1)
@@ -251,7 +251,7 @@ class PutSyncInfoRequestTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("PutSyncInfoRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoRequest)
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
         self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-ID")
@@ -274,7 +274,7 @@ class PutSyncInfoResponseTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg(self.msg_struct, serialized_str)
+        parsed_msg_struct = deserialize_msg("PutSyncInfoResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoResponse)
         self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
         self.assertEqual(parsed_msg_struct.inserted, True)
