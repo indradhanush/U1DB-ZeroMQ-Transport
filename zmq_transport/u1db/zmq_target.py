@@ -74,23 +74,43 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
 
     def get_sync_info(self, source_replica_uid):
         """
-        Returns the sync state.
-        Note: Doesnt return anything now. BROKEN.
+        Returns the sync state information.
+
+        :returns: tuple
         """
         sync_id = get_sync_id()
-        sync_info_struct = create_get_sync_info_request_msg(
+        get_sync_info_struct = create_get_sync_info_request_msg(
             source_replica_uid=source_replica_uid, sync_id=sync_id)
-        str_sync_info = serialize_msg(sync_info_struct)
+        iden_get_sync_info_struct = proto.Identifier(
+            type=proto.Identifier.GET_SYNC_INFO_REQUEST,
+            get_sync_info_request=get_sync_info_struct)
+        str_iden_get_sync_info = serialize_msg(iden_get_sync_info_struct)
 
         sync_type_struct = create_sync_type_msg(sync_type="sync-from")
-        str_sync_type = serialize_msg(sync_type_struct)
+        iden_sync_type_struct = proto.Identifier(
+            type=proto.Identifier.SYNC_TYPE, sync_type=sync_type_struct)
+        str_iden_sync_type = serialize_msg(iden_sync_type_struct)
 
         zmq_verb_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.GET)
-        str_zmq_verb = serialize_msg(zmq_verb_struct)
-        to_send = [str_zmq_verb, str_sync_type, str_sync_info]
+        iden_zmq_verb_struct = proto.Identifier(type=proto.Identifier.ZMQ_VERB,
+                                         zmq_verb=zmq_verb_struct)
+        str_iden_zmq_verb = serialize_msg(iden_zmq_verb_struct)
 
+        # Frame 1: ZMQVerb; Frame 2: SyncType; Frame 3:GetSyncInfoRequest
+        to_send = [str_iden_zmq_verb, str_iden_sync_type, str_iden_get_sync_info]
         self.speaker._socket.send_multipart(to_send)
-        return self.speaker.recv()
+
+        # Frame 1: GetSyncInfoResponse
+        response = self.speaker.recv()[0]
+        print response
+        iden_struct = deserialize_msg("Identifier", response)
+        response = iden_struct.get_sync_info_response
+        return (response.target_replica_uid, response.target_replica_generation,
+                response.target_replica_trans_id,
+                response.source_last_known_generation,
+                response.source_last_known_trans_id)
+
+
 
 
     ################### Start of Application logic handlers. ##################

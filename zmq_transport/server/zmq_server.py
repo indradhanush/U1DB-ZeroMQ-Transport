@@ -3,10 +3,15 @@ import zmq
 from zmq.eventloop.zmqstream import ZMQStream
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
+# Protobuf Imports
+from google.protobuf.message import DecodeError
+
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
+from zmq_transport.common.utils import serialize_msg, deserialize_msg,\
+    get_target_info, get_source_info, create_get_sync_info_response_msg
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -175,10 +180,30 @@ class Server(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print msg
+        print "<SERVER> Received_from_Client: ", msg
+        original_msg = msg
         # Message Format: [connection_id, request_id, delimiter_frame, msg]
         connection_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
-        self.frontend.send([connection_id, request_id, "", "HELLO WORLD"])
+        response = []
+        for frame in msg:
+            try:
+                iden_struct = deserialize_msg("Identifier", frame)
+            except DecodeError:
+                # Silently fail.
+                break
+            else:
+                frame_response = identify_msg(iden_struct)
+                if frame_response:
+                    try:
+                        frame_response_str = serialize_msg(frame_response)
+                    except DecodeError:
+                        continue
+                    else:
+                        response.append(frame_response_str)
+
+        to_send = [connection_id, request_id, ""]
+        to_send.extend(response)
+        self.frontend.send(to_send)
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -220,4 +245,52 @@ class Server(ZMQBaseComponent):
         self.frontend = None
         self._context = None
         self.dataset = []
+
+
+############## Start of Application logic server side utilities. ##############
+
+def identify_msg(iden_struct):
+    """
+    Identifies the type of message packed in Identifier message structure and
+    routes to the specific handler.
+    :param iden_struct: Identifier message structure.
+    :type iden_struct: zmq_transport.common.message_pb2.Identifier
+    """
+    if iden_struct.type == 3: # SyncType
+        return handle_sync_type(iden_struct.sync_type)
+    elif iden_struct.type == 4: # ZMQVerb
+        return handle_zmq_verb(iden_struct.zmq_verb)
+    elif iden_struct.type == 5: # GetSyncInfoRequest
+        return handle_get_sync_info(iden_struct.subscribe_request)
+
+
+def handle_sync_type(sync_type_struct):
+    pass
+
+def handle_zmq_verb(zmq_verb_struct):
+    pass
+
+def handle_get_sync_info(get_sync_info_struct):
+    """
+    Returns a GetSyncInfoResponse message.
+
+    :returns: zmq_transport.common.message_pb2.GetSyncInfoResponse wrapped in a
+    zmq_transport.common.message_pb2.Identifier message.
+    """
+    target_info = get_target_info()
+    source_info = get_source_info()
+
+    kwargs = {}
+    for key, value in target_info.items():
+        kwargs[key] = value
+
+    for key, value in source_info.items():
+        kwargs[key] = value
+
+    get_sync_info_struct = create_get_sync_info_response_msg(**kwargs)
+    return proto.Identifier(type=proto.Identifier.GET_SYNC_INFO_RESPONSE,
+                            get_sync_info_response=get_sync_info_struct)
+
+
+############### End of Application logic server side utilities. ###############
 

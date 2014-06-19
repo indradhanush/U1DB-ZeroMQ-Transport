@@ -8,6 +8,8 @@ import uuid
 from zmq_transport.common import message_pb2 as proto
 
 
+######################## Start of Protobuf utilities. ########################
+
 def _create_protobuf_msg(protobuf_type, **kwargs):
     """
     Creates a protobuf message defined in message.proto
@@ -23,6 +25,7 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
     for key, value in kwargs.items():
         setattr(msg_struct, key, value)
     return msg_struct
+
 
 def create_subscribe_request_msg(**kwargs):
     """
@@ -221,6 +224,10 @@ def deserialize_msg(msg_struct, msg):
     return msg_struct
 
 
+######################### End of Protobuf utilities. #########################
+
+########################## Start of U1DB utilities. ##########################
+
 def get_sync_id():
     """
     Helper function to generate a unique sync_id.
@@ -230,3 +237,31 @@ def get_sync_id():
     """
     return str(uuid.uuid4())
 
+
+def get_target_info():
+    """
+    Helper function to get the current target replica info.
+
+    :returns: dict
+    """
+    info = {}
+    info["target_replica_uid"] = str(uuid.uuid4())
+    info["target_replica_generation"] = 12
+    info["target_replica_trans_id"] = str(uuid.uuid4())
+
+    return info
+
+
+def get_source_info():
+    """
+    Helper function to get the the source replica information at the target.
+
+    :returns: dict
+    """
+    info = {}
+    info["source_last_known_generation"] = 8
+    info["source_last_known_trans_id"] = str(uuid.uuid4())
+
+    return info
+
+########################### End of U1DB utilities. ###########################
