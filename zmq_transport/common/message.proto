@@ -117,14 +117,14 @@ message GetDocumentResponse {
 message PutSyncInfoRequest {
     required string sync_id = 1;
     required string source_replica_uid = 2;
-    required int32 source_generation = 3;
-    required string source_trans_id = 4;
+    required int32 source_replica_generation = 3;
+    required string source_transaction_id = 4;
 }
 
 
 // A PutSyncInfoResponse message is confirms a successful PutSyncInfoRequest.
 message PutSyncInfoResponse {
-    required string source_trans_id = 1;
+    required string source_transaction_id = 1;
     required bool inserted = 2;
 }
 

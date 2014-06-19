@@ -11,7 +11,8 @@ from zmq_transport.config import settings
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import serialize_msg, deserialize_msg,\
-    get_target_info, get_source_info, create_get_sync_info_response_msg
+    get_target_info, get_source_info, create_get_sync_info_response_msg,\
+    create_put_sync_info_response_msg
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -181,28 +182,28 @@ class Server(ZMQBaseComponent):
         :type msg: list
         """
         print "<SERVER> Received_from_Client: ", msg
-        original_msg = msg
         # Message Format: [connection_id, request_id, delimiter_frame, msg]
+        # msg: [ZMQVerb, SyncType, Identifier(Action Message)]
         connection_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
         response = []
-        for frame in msg:
-            try:
-                iden_struct = deserialize_msg("Identifier", frame)
-            except DecodeError:
-                # Silently fail.
-                break
-            else:
-                frame_response = identify_msg(iden_struct)
-                if frame_response:
-                    try:
-                        frame_response_str = serialize_msg(frame_response)
-                    except DecodeError:
-                        continue
-                    else:
-                        response.append(frame_response_str)
 
-        to_send = [connection_id, request_id, ""]
-        to_send.extend(response)
+        zmq_verb_str, sync_type_str, iden_str = msg
+        # Do something with zmq_verb_str and sync_type_str later.
+        try:
+            iden_struct = deserialize_msg("Identifier", iden_str)
+        except DecodeError:
+            # Silently fail.
+            return
+        else:
+            frame_response = identify_msg(iden_struct)
+            if frame_response:
+                try:
+                    response = serialize_msg(frame_response)
+                except DecodeError:
+                    # Silently fail.
+                    return
+
+        to_send = [connection_id, request_id, "", response]
         self.frontend.send(to_send)
 
     def handle_snd_update_app(self, msg, status):
@@ -261,16 +262,22 @@ def identify_msg(iden_struct):
     elif iden_struct.type == 4: # ZMQVerb
         return handle_zmq_verb(iden_struct.zmq_verb)
     elif iden_struct.type == 5: # GetSyncInfoRequest
-        return handle_get_sync_info(iden_struct.subscribe_request)
+        return handle_get_sync_info_request(iden_struct.subscribe_request)
+    elif iden_struct.type == 7: # SendDocumentRequest
+        return handle_send_doc_request(iden_struct.send_document_request)
+    elif iden_struct.type == 11: # PutSyncInfoRequest
+        return handle_put_sync_info_request(iden_struct.put_sync_info_request)
 
 
 def handle_sync_type(sync_type_struct):
     pass
 
+
 def handle_zmq_verb(zmq_verb_struct):
     pass
 
-def handle_get_sync_info(get_sync_info_struct):
+
+def handle_get_sync_info_request(get_sync_info_struct):
     """
     Returns a GetSyncInfoResponse message.
 
@@ -291,6 +298,25 @@ def handle_get_sync_info(get_sync_info_struct):
     return proto.Identifier(type=proto.Identifier.GET_SYNC_INFO_RESPONSE,
                             get_sync_info_response=get_sync_info_struct)
 
+
+def handle_send_doc_request(send_doc_req_struct):
+    pass
+
+
+def handle_put_sync_info_request(put_sync_info_struct):
+    """
+    Returns a PutSyncInfoResponse message.
+
+    :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse wrapped in a
+    zmq_transport.common.message_pb2.Identifier message.
+    """
+    # Do some db transaction here.
+    inserted = True
+    response_struct = create_put_sync_info_response_msg(
+        source_transaction_id=put_sync_info_struct.source_transaction_id,
+        inserted=inserted)
+    return proto.Identifier(type=proto.Identifier.PUT_SYNC_INFO_RESPONSE,
+                            put_sync_info_response=response_struct)
 
 ############### End of Application logic server side utilities. ###############
 

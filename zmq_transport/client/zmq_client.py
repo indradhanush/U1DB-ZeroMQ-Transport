@@ -52,6 +52,7 @@ class Speaker(ClientSocket):
         """
         ClientSocket.__init__(self, context.socket(zmq.REQ), endpoint)
         self._socket.setsockopt(zmq.REQ_CORRELATE, 1)
+        self._socket.setsockopt(zmq.REQ_RELAXED, 1)
 
     def run(self):
         """
