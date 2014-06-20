@@ -12,10 +12,10 @@ from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import create_zmq_verb_msg,\
     create_sync_type_msg, create_get_sync_info_request_msg, serialize_msg,\
     deserialize_msg, get_sync_id, create_put_sync_info_request_msg,\
-    create_send_document_request_msg, parse_response, get_doc_info,\
-    get_source_replica_uid
-
+    create_send_document_request_msg, create_get_document_request_msg,\
+    parse_response, get_doc_info, get_source_replica_uid
 from zmq_transport.u1db import SyncTarget
+
 
 class ZMQSyncTarget(ZMQClientBase, SyncTarget):
     """
@@ -223,6 +223,55 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = parse_response(response, "send_document_response")
         return (response.source_transaction_id, response.inserted)
 
+    def get_doc_at_target(self, source_replica_uid, sync_id,
+                          docs_received_count):
+        """
+        Sends a GetDocumentRequest to target to receive documents that were
+        changed at the target replica.
+
+        :param source_replica_uid: The identifier of the source replica.
+        :type source_replica_uid: str
+        :param sync_id: The sync id of the current sync in process.
+        :type sync_id: str
+        :param docs_received_count: Total count of docs received.
+        :type docs_received_count: int
+
+        :returns: dict
+        """
+        # Create GetDocumentRequest message.
+        get_doc_req_struct = create_get_document_request_msg(
+            source_replica_uid=source_replica_uid, sync_id=sync_id,
+            docs_received_count=docs_received_count)
+        iden_get_doc_req = proto.Identifier(
+            type=proto.Identifier.GET_DOCUMENT_REQUEST,
+            get_document_request=get_doc_req_struct)
+        str_iden_get_doc_req = serialize_msg(iden_get_doc_req)
+
+        # Create SyncType message.
+        sync_type_struct = create_sync_type_msg(sync_type="sync-from")
+        iden_sync_type = proto.Identifier(type=proto.Identifier.SYNC_TYPE,
+                                          sync_type=sync_type_struct)
+        str_iden_sync_type = serialize_msg(iden_sync_type)
+
+        # Create ZMQVerb message
+        zmq_verb_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.GET)
+        iden_zmq_verb = proto.Identifier(type=proto.Identifier.ZMQ_VERB,
+                                         zmq_verb=zmq_verb_struct)
+        str_iden_zmq_verb = serialize_msg(iden_zmq_verb)
+
+        # Frame 1: ZMQVerb; Frame 2: SyncType; Frame 3: GetDocumentRequest
+        to_send = [str_iden_zmq_verb, str_iden_sync_type, str_iden_get_doc_req]
+        self.speaker.send(to_send)
+
+        # Frame 1: GetDocumentResponse
+        response = self.speaker.recv()[0]
+        response = parse_response(response, "get_document_response")
+        return {"doc_id": response.doc_id,
+                "doc_generation":response.doc_generation,
+                "doc_content": response.doc_content,
+                "target_generation": response.target_generation,
+                "target_trans_id": response.target_trans_id}
+
     def sync_exchange(self, docs_by_generation, source_replica_uid,
                       last_known_generation, last_known_trans_id,
                       return_doc_cb, ensure_callback=None):
@@ -250,6 +299,9 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 25, sync_info_response[4])
             print send_doc_response
 
+            target_docs_response = self.get_doc_at_target(source_replica_uid,
+                                                          sync_id, 0)
+            print target_docs_response
             # record_sync_response =  self.record_sync_info(
             #     source_replica_uid, sync_info_response[3],
             #     sync_info_response[4])

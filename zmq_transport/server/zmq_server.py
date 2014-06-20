@@ -11,8 +11,9 @@ from zmq_transport.config import settings
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import serialize_msg, deserialize_msg,\
-    get_target_info, get_source_info, create_get_sync_info_response_msg,\
-    create_put_sync_info_response_msg, create_send_document_response_msg
+    create_get_sync_info_response_msg, create_put_sync_info_response_msg,\
+    create_send_document_response_msg, create_get_document_response_msg,\
+    get_target_info, get_source_info, get_doc_info
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -265,6 +266,8 @@ def identify_msg(iden_struct):
         return handle_get_sync_info_request(iden_struct.subscribe_request)
     elif iden_struct.type == 7: # SendDocumentRequest
         return handle_send_doc_request(iden_struct.send_document_request)
+    elif iden_struct.type == 9: # GetDocumentRequest
+        return handle_get_doc_request(iden_struct.get_document_request)
     elif iden_struct.type == 11: # PutSyncInfoRequest
         return handle_put_sync_info_request(iden_struct.put_sync_info_request)
 
@@ -315,6 +318,24 @@ def handle_send_doc_request(send_doc_req_struct):
         inserted=status)
     return proto.Identifier(type=proto.Identifier.SEND_DOCUMENT_RESPONSE,
                             send_document_response=send_doc_resp_struct)
+
+
+def handle_get_doc_request(get_doc_req_struct):
+    """
+    Returns a requested document.
+
+    :returns: zmq_transport.common.message_pb2.GetDocumentResponse wrapped in a
+    zmq_transport.common.message_pb2.Identifier message.
+    """
+    # TODO: Fetch doc from db.
+    doc_id, doc_generation, doc_content = get_doc_info()
+    target_generation = 25
+    target_trans_id = "TARGET-ID"
+    get_doc_resp_struct = create_get_document_response_msg(
+        doc_id=doc_id, doc_generation=doc_generation, doc_content=doc_content,
+        target_generation=target_generation, target_trans_id=target_trans_id)
+    return proto.Identifier(type=proto.Identifier.GET_DOCUMENT_RESPONSE,
+                            get_document_response=get_doc_resp_struct)
 
 
 def handle_put_sync_info_request(put_sync_info_struct):
