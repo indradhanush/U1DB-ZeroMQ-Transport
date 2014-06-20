@@ -4,6 +4,9 @@ Common Utilities.
 # System Imports
 import uuid
 
+# Protobuf Imports
+from google.protobuf.message import DecodeError
+
 # Local Imports
 from zmq_transport.common import message_pb2 as proto
 
@@ -224,6 +227,24 @@ def deserialize_msg(msg_struct, msg):
     return msg_struct
 
 
+def parse_response(response, attribute):
+    """
+    Parses the response.
+
+    :param response: Response string fro parsing.
+    :type response: str
+    :param attribute: Attribute of message structure.
+    :type attribute: str
+
+    :returns: A protobuf message structure.
+    """
+    try:
+        iden_struct = deserialize_msg("Identifier", response)
+    except DecodeError, e:
+        print "Expected response of type Identifier.", e
+    else:
+        return getattr(iden_struct, attribute)
+
 ######################### End of Protobuf utilities. #########################
 
 ########################## Start of U1DB utilities. ##########################
@@ -264,4 +285,24 @@ def get_source_info():
 
     return info
 
+
+def get_doc_info():
+    """
+    TODO: Should return information about a document. Arbit now.
+    """
+    doc_id = str(uuid.uuid4())
+    doc_generation = 18
+    doc_content = "Random garbled text for simulation."
+
+    return (doc_id, doc_generation, doc_content)
+
+
+def get_source_replica_uid():
+    """
+    Helper funtion to return source_replica_uid.
+    """
+    # TODO: Implement functionality. Arbit now.
+    return "S-ID"
+
 ########################### End of U1DB utilities. ###########################
+

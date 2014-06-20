@@ -12,7 +12,7 @@ from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import serialize_msg, deserialize_msg,\
     get_target_info, get_source_info, create_get_sync_info_response_msg,\
-    create_put_sync_info_response_msg
+    create_put_sync_info_response_msg, create_send_document_response_msg
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -300,7 +300,21 @@ def handle_get_sync_info_request(get_sync_info_struct):
 
 
 def handle_send_doc_request(send_doc_req_struct):
-    pass
+    """
+    Attempts to insert a document into the database and returns the status of
+    the operation.
+
+    :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse wrapped in a
+    zmq_transport.common.message_pb2.Identifier message.
+    """
+    # TODO: Some DB operation.
+    # status = insert_doc()
+    status = True
+    send_doc_resp_struct = create_send_document_response_msg(
+        source_transaction_id=send_doc_req_struct.source_transaction_id,
+        inserted=status)
+    return proto.Identifier(type=proto.Identifier.SEND_DOCUMENT_RESPONSE,
+                            send_document_response=send_doc_resp_struct)
 
 
 def handle_put_sync_info_request(put_sync_info_struct):

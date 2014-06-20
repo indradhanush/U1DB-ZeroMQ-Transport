@@ -78,14 +78,14 @@ message SendDocumentRequest {
 
     // Source replica transaction log for the above document.
     required int32 source_generation = 6;
-    required string source_trans_id = 7;
+    required string source_transaction_id = 7;
 }
 
 
 // A SendDocumentResponse message informs the source about a successful sync of an
 // individual document.
 message SendDocumentResponse {
-    required string source_trans_id = 1;
+    required string source_transaction_id = 1;
     required bool inserted = 2;
 }
 
