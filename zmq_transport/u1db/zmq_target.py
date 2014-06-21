@@ -302,10 +302,11 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             target_docs_response = self.get_doc_at_target(source_replica_uid,
                                                           sync_id, 0)
             print target_docs_response
-            # record_sync_response =  self.record_sync_info(
-            #     source_replica_uid, sync_info_response[3],
-            #     sync_info_response[4])
 
+            record_sync_response =  self.record_sync_info(
+                source_replica_uid, sync_info_response[3],
+                sync_info_response[4])
+            print record_sync_response
 
             self.sync_required = False
         else:
