@@ -8,12 +8,28 @@ from google.protobuf.message import DecodeError
 
 # Local Imports
 from zmq_transport.config import settings
+from zmq_transport.config.protobuf_settings import (
+    MSG_TYPE_SYNC_TYPE,
+    MSG_TYPE_ZMQ_VERB,
+    MSG_TYPE_GET_SYNC_INFO_REQUEST,
+    MSG_TYPE_SEND_DOCUMENT_REQUEST,
+    MSG_TYPE_GET_DOCUMENT_REQUEST,
+    MSG_TYPE_PUT_SYNC_INFO_REQUEST
+)
+
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
-from zmq_transport.common.utils import serialize_msg, deserialize_msg,\
-    create_get_sync_info_response_msg, create_put_sync_info_response_msg,\
-    create_send_document_response_msg, create_get_document_response_msg,\
-    get_target_info, get_source_info, get_doc_info
+from zmq_transport.common.utils import (
+    serialize_msg,
+    deserialize_msg,
+    create_get_sync_info_response_msg,
+    create_put_sync_info_response_msg,
+    create_send_document_response_msg,
+    create_get_document_response_msg,
+    get_target_info,
+    get_source_info,
+    get_doc_info
+)
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -172,7 +188,10 @@ class Server(ZMQBaseComponent):
         :param msg: Raw/Serialized message that was sent.
         :type msg: list
         :param status: return result of socket.send_multipart(msg)
-        :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
+        :type status: MessageTracker or None ;
+                      See: http://zeromq.github.io/pyzmq/api/generated/\
+                      zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.\
+                      ZMQStream.on_send
         """
         print "<SERVER> Sent_to_Client: ", msg
 
@@ -193,7 +212,8 @@ class Server(ZMQBaseComponent):
         try:
             iden_struct = deserialize_msg("Identifier", iden_str)
         except DecodeError:
-            # Silently fail.
+            # Silently fail for now. Implementation of recover sync
+            # could go here.
             return
         else:
             frame_response = identify_msg(iden_struct)
@@ -258,17 +278,17 @@ def identify_msg(iden_struct):
     :param iden_struct: Identifier message structure.
     :type iden_struct: zmq_transport.common.message_pb2.Identifier
     """
-    if iden_struct.type == 3: # SyncType
+    if iden_struct.type == MSG_TYPE_SYNC_TYPE:
         return handle_sync_type(iden_struct.sync_type)
-    elif iden_struct.type == 4: # ZMQVerb
+    elif iden_struct.type == MSG_TYPE_ZMQ_VERB:
         return handle_zmq_verb(iden_struct.zmq_verb)
-    elif iden_struct.type == 5: # GetSyncInfoRequest
+    elif iden_struct.type == MSG_TYPE_GET_SYNC_INFO_REQUEST:
         return handle_get_sync_info_request(iden_struct.subscribe_request)
-    elif iden_struct.type == 7: # SendDocumentRequest
+    elif iden_struct.type == MSG_TYPE_SEND_DOCUMENT_REQUEST:
         return handle_send_doc_request(iden_struct.send_document_request)
-    elif iden_struct.type == 9: # GetDocumentRequest
+    elif iden_struct.type == MSG_TYPE_GET_DOCUMENT_REQUEST:
         return handle_get_doc_request(iden_struct.get_document_request)
-    elif iden_struct.type == 11: # PutSyncInfoRequest
+    elif iden_struct.type == MSG_TYPE_PUT_SYNC_INFO_REQUEST:
         return handle_put_sync_info_request(iden_struct.put_sync_info_request)
 
 
@@ -284,8 +304,8 @@ def handle_get_sync_info_request(get_sync_info_struct):
     """
     Returns a GetSyncInfoResponse message.
 
-    :returns: zmq_transport.common.message_pb2.GetSyncInfoResponse wrapped in a
-    zmq_transport.common.message_pb2.Identifier message.
+    :return: GetSyncInfoResponse message wrapped in an Identifier message.
+    :rtype: zmq_transport.common.message_pb2.Identifier
     """
     target_info = get_target_info()
     source_info = get_source_info()
@@ -307,8 +327,8 @@ def handle_send_doc_request(send_doc_req_struct):
     Attempts to insert a document into the database and returns the status of
     the operation.
 
-    :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse wrapped in a
-    zmq_transport.common.message_pb2.Identifier message.
+    :return: PutSyncInfoResponse message wrapped in an Identifier message.
+    :type: zmq_transport.common.message_pb2.Identifier
     """
     # TODO: Some DB operation.
     # status = insert_doc()
@@ -324,8 +344,8 @@ def handle_get_doc_request(get_doc_req_struct):
     """
     Returns a requested document.
 
-    :returns: zmq_transport.common.message_pb2.GetDocumentResponse wrapped in a
-    zmq_transport.common.message_pb2.Identifier message.
+    :return: GetDocumentResponse message wrapped in an Identifier message.
+    :rtype: zmq_transport.common.message_pb2.Identifier
     """
     # TODO: Fetch doc from db.
     doc_id, doc_generation, doc_content = get_doc_info()
@@ -342,10 +362,10 @@ def handle_put_sync_info_request(put_sync_info_struct):
     """
     Returns a PutSyncInfoResponse message.
 
-    :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse wrapped in a
-    zmq_transport.common.message_pb2.Identifier message.
+    :return: PutSyncInfoResponse message wrapped in an Identifier message.
+    :rtype: zmq_transport.common.message_pb2.Identifier
     """
-    # Do some db transaction here.
+    # TODO: Do some db transaction here.
     inserted = True
     response_struct = create_put_sync_info_response_msg(
         source_transaction_id=put_sync_info_struct.source_transaction_id,

@@ -53,3 +53,27 @@ discuss
 * Might rename package `zmq_transport` into `zmtp`. Concise. Sounds
   better. :)
 
+* __Doc Chunking:__ String length in SendDocumentRequest is not
+  limited or known now. Needs to be handled while implementing
+  document chunking.
+
+* __Parallelizing SendDoc and GetDoc:__ <db4>: This is cool because
+  GetDocumentRequests can be parallelized, and we just enfoce
+  insertion of the documents in the correct order in the client by
+  using a lock or a queue. Maybe you can thing about a way to do that
+  for PutDocumentRequests also, but I'm not sure how would be the best
+  way to do it. Documents always have to be inserted in the correct
+  order, either in source and in target, so the "other replica"
+  metadata is correctly maintained. __Implement a lock enforced queue maybe.__
+
+* __Utils module:__ Variables of dict info in get_target_info function
+  need to be stored somewhere in a target_settings file.
+
+* __Recover Sync Implentation:__ On a `DecodeError`, the code silently
+  fails fow now. RecoverSync Implementation could fill this in.
+  
+* __Server Handler:__ Add functionality to do a db transaction in
+  handle_put_sync_info_request.
+
+* __Narrow down \__init\__.py__: Remove un-needed dependencies from
+  u1db.\__init\__ module.

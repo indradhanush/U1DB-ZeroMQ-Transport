@@ -59,8 +59,8 @@ class ZMQBaseSocket(object):
         """
         Wrapper over "socket.recv_multipart()".
 
-        :returns: Received message.
-        :type: list
+        :return: Received message.
+        :rtype: list
         """
         return self._socket.recv_multipart()
 

@@ -9,11 +9,21 @@ from zmq.eventloop.ioloop import PeriodicCallback
 # Local Imports
 from zmq_transport.client.zmq_client import ZMQClientBase
 from zmq_transport.common import message_pb2 as proto
-from zmq_transport.common.utils import create_zmq_verb_msg,\
-    create_sync_type_msg, create_get_sync_info_request_msg, serialize_msg,\
-    deserialize_msg, get_sync_id, create_put_sync_info_request_msg,\
-    create_send_document_request_msg, create_get_document_request_msg,\
-    parse_response, get_doc_info, get_source_replica_uid
+from zmq_transport.common.utils import (
+    serialize_msg,
+    deserialize_msg,
+    create_zmq_verb_msg,
+    create_sync_type_msg,
+    create_get_sync_info_request_msg,
+    create_put_sync_info_request_msg,
+    create_send_document_request_msg,
+    create_get_document_request_msg,
+    parse_response,
+    get_sync_id,
+    get_doc_info,
+    get_source_replica_uid
+)
+
 from zmq_transport.u1db import SyncTarget
 
 
@@ -26,11 +36,13 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         Initializes ZMQSyncTarget instance.
         
         :param endpoints: list of endpoints. endpoints[0] is
-        endpoint_client_handler and endpoints[1] is endpoint_publisher.
+                          endpoint_client_handler and endpoints[1] is
+                          endpoint_publisher.
         :type endpoints: list
         """
         if isinstance(endpoints, list):
-            assert (len(endpoints) == 2), "Length of endpoints must be 2."
+            if len(endpoints) != 2:
+                raise ValueError("Length of endpoints must be 2.")
             ZMQClientBase.__init__(self, endpoints[0], endpoints[1])
             self.endpoints = endpoints
             self.sync_required = False
@@ -70,8 +82,9 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         Returns ZMQSyncTarget instance
 
-        :param endpoints: list of endpoints. endpoints[0] is endpoint_client_handler and
-                          endpoints[1] is endpoint_publisher
+        :param endpoints: list of endpoints. endpoints[0] is
+                          endpoint_client_handler and endpoints[1] is
+                          endpoint_publisher
         :type endpoints: list
         """
         return ZMQSyncTarget(endpoints[0], endpoints[1])
@@ -80,7 +93,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         Returns the sync state information.
 
-        :returns: tuple
+        :return: Last time target was synced with source.
+        :rtype: tuple
         """
         # Create GetSyncInfoRequest message.
         sync_id = get_sync_id()
@@ -124,8 +138,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         Informs the target, about its latest state after completion of the
         sync_exchange.
 
-        :returns: source_transaction_id and inserted status.
-        :type: tuple
+        :return: source_transaction_id and inserted status.
+        :rtype: tuple
         """
         # Create PutSyncInfoRequest message.
         sync_id = get_sync_id() # Might have to pass this as a param
@@ -188,8 +202,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :param source_transaction_id: The current transaction id at source.
         :type source_transaction_id: str
 
-        :returns: source_transaction_id and inserted status.
-        :type: tuple
+        :return: source_transaction_id and inserted status.
+        :rtype: tuple
         """
         # Create SendDocumentRequest message.
         send_doc_req_struct = create_send_document_request_msg(
@@ -236,7 +250,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :param docs_received_count: Total count of docs received.
         :type docs_received_count: int
 
-        :returns: dict
+        :return: A document from the target.
+        :rtype: dict
         """
         # Create GetDocumentRequest message.
         get_doc_req_struct = create_get_document_request_msg(

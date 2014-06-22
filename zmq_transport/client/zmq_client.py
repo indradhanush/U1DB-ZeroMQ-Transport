@@ -7,8 +7,11 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 from zmq_transport.config import settings
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
-from zmq_transport.common.utils import create_subscribe_request_msg, serialize_msg, deserialize_msg
-
+from zmq_transport.common.utils import (
+    serialize_msg,
+    deserialize_msg,
+    create_subscribe_request_msg
+)
 
 class ClientSocket(ZMQBaseSocket):
     """
@@ -51,7 +54,11 @@ class Speaker(ClientSocket):
         :type context: zmq.Context
         """
         ClientSocket.__init__(self, context.socket(zmq.REQ), endpoint)
+        # Force REQ socket to match request-reply pairs. Drops non
+        # matching replies silently.
         self._socket.setsockopt(zmq.REQ_CORRELATE, 1)
+        # Allow sending a new request before a reply to a previous
+        # request is received.
         self._socket.setsockopt(zmq.REQ_RELAXED, 1)
 
     def run(self):
@@ -124,7 +131,9 @@ class ZMQClientBase(ZMQBaseComponent):
         :type endpoint_client_handler: str
         :param endpoint_publisher: Endpoint of PUB socket on Server.
         :type endpoint_publisher: str
-        :returns: zmq_transport.client.ZMQClientBase instance.
+
+        :return: ZMQClientBase instance.
+        :rtype: zmq_transport.client.ZMQClientBase instance.
         """
         ZMQBaseComponent.__init__(self)
         self.speaker = Speaker(endpoint_client_handler, self._context)

@@ -19,10 +19,11 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
     :param protobuf_type: Type of message structure.
     :type protobuf_type: str
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of "protobuf_type" message structure.
-    :param kwargs: dict
+                   their respective values of "protobuf_type" message structure.
+    :type kwargs: dict
 
-    :returns: A protobuf message struct.
+    :return: A protobuf message struct.
+    :rtype: zmq_transport.common.message_pb2
     """
     msg_struct = getattr(proto, protobuf_type)()
     for key, value in kwargs.items():
@@ -36,10 +37,12 @@ def create_subscribe_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of SubscribeRequest message structure.
-    :param kwargs: dict
+                   their respective values of SubscribeRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.SubscribeRequest instance.
+    :return: SubscribeRequest message.
+    :rtype: zmq_transport.common.message_pb2.SubscribeRequest
     """
     return _create_protobuf_msg("SubscribeRequest", **kwargs)
 
@@ -50,10 +53,12 @@ def create_unsubscribe_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of UnsubscribeRequest message structure.
-    :param kwargs: dict
+                   their respective values of UnsubscribeRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.UnsubscribeRequest instance.
+    :return: UnsubscribeRequest message.
+    :rtype: zmq_transport.common.message_pb2.UnsubscribeRequest
     """
     return _create_protobuf_msg("UnsubscribeRequest", **kwargs)
 
@@ -63,10 +68,11 @@ def create_sync_type_msg(**kwargs):
     Creates a zmq_transport.common.message_pb2.SyncType message structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of SyncType message structure.
-    :param kwargs: dict
+                   their respective values of SyncType message structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.SyncType instance.
+    :return: SyncType message.
+    :rtype: zmq_transport.common.message_pb2.SyncType
     """
     return _create_protobuf_msg("SyncType", **kwargs)
 
@@ -76,10 +82,11 @@ def create_zmq_verb_msg(**kwargs):
     Creates a zmq_transport.common.message_pb2.ZMQVerb message structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of ZMQVerb message structure.
-    :param kwargs: dict
+                   their respective values of ZMQVerb message structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.ZMQVerb instance.
+    :return: ZMQVerb message.
+    :rtype: zmq_transport.common.message_pb2.ZMQVerb
     """
     return _create_protobuf_msg("ZMQVerb", **kwargs)
 
@@ -90,10 +97,12 @@ def create_get_sync_info_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of GetSyncInfoRequest message structure.
-    :param kwargs: dict
+                   their respective values of GetSyncInfoRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.GetSyncInfoRequest instance.
+    :return: GetSyncInfoRequest message.
+    :rtype: zmq_transport.common.message_pb2.GetSyncInfoRequest
     """
     return _create_protobuf_msg("GetSyncInfoRequest", **kwargs)
 
@@ -104,10 +113,12 @@ def create_get_sync_info_response_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of GetSyncInfoResponse message structure.
-    :param kwargs: dict
+                   their respective values of GetSyncInfoResponse message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.GetSyncInfoResponse instance.
+    :return: GetSyncInfoResponse message.
+    :rtype: zmq_transport.common.message_pb2.GetSyncInfoResponse
     """
     return _create_protobuf_msg("GetSyncInfoResponse", **kwargs)
 
@@ -118,10 +129,12 @@ def create_send_document_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of SyncDocumentRequest message structure.
-    :param kwargs: dict
+                   their respective values of SyncDocumentRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.SyncDocumentRequest instance.
+    :return: SyncDocumentRequest message.
+    :rtype: zmq_transport.common.message_pb2.SyncDocumentRequest
     """
     return _create_protobuf_msg("SendDocumentRequest", **kwargs)
 
@@ -132,10 +145,12 @@ def create_send_document_response_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of SyncDocumentResponse message structure.
-    :param kwargs: dict
+                   their respective values of SyncDocumentResponse message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.SyncDocumentResponse instance.
+    :return: SyncDocumentResponse message.
+    :rtype: zmq_transport.common.message_pb2.SyncDocumentResponse
     """
     return _create_protobuf_msg("SendDocumentResponse", **kwargs)
 
@@ -146,10 +161,12 @@ def create_get_document_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of GetDocumentRequest message structure.
-    :param kwargs: dict
+                   their respective values of GetDocumentRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.GetDocumentRequest instance.
+    :return: GetDocumentRequest message.
+    :rtype: zmq_transport.common.message_pb2.GetDocumentRequest
     """
     return _create_protobuf_msg("GetDocumentRequest", **kwargs)
 
@@ -160,10 +177,12 @@ def create_get_document_response_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of GetDocumentResponse message structure.
-    :param kwargs: dict
+                   their respective values of GetDocumentResponse message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.GetDocumentResponse instance.
+    :return: GetDocumentResponse message.
+    :rtype: zmq_transport.common.message_pb2.GetDocumentResponse
     """
     return _create_protobuf_msg("GetDocumentResponse", **kwargs)
 
@@ -174,10 +193,12 @@ def create_put_sync_info_request_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of PutSyncInfoRequest message structure.
-    :param kwargs: dict
+                   their respective values of PutSyncInfoRequest message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.PutSyncInfoRequest instance.
+    :return: PutSyncInfoRequest message.
+    :rtype: zmq_transport.common.message_pb2.PutSyncInfoRequest
     """
     return _create_protobuf_msg("PutSyncInfoRequest", **kwargs)
 
@@ -188,10 +209,12 @@ def create_put_sync_info_response_msg(**kwargs):
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-    their respective values of PutSyncInfoResponse message structure.
-    :param kwargs: dict
+                   their respective values of PutSyncInfoResponse message
+                   structure.
+    :type kwargs: dict
 
-    :returns: zmq_transport.common.message_pb2.PutSyncInfoResponse instance.
+    :return: PutSyncInfoResponse message.
+    :rtype: zmq_transport.common.message_pb2.PutSyncInfoResponse
     """
     return _create_protobuf_msg("PutSyncInfoResponse", **kwargs)
 
@@ -203,8 +226,8 @@ def serialize_msg(msg_struct):
     :param msg_struct: A message structure defined in message.proto
     :type msg_struct: A protobuf message instance.
 
-    :returns: A serialized string created out of msg_struct.
-    :type: str
+    :return: A serialized string created out of msg_struct.
+    :rtype: str
     """
     return msg_struct.SerializeToString()
 
@@ -218,9 +241,8 @@ def deserialize_msg(msg_struct, msg):
     :param msg: Message to be parsed.
     :type msg: str
 
-    :returns: An instance of a message structure defined in
-    zmq_transport.common.message_pb2 module.
-    :type: Instance of one of zmq_transport.common.message_pb2
+    :return: An instance of a message structure defined in message_pb2 module.
+    :rtype: zmq_transport.common.message_pb2
     """
     msg_struct = getattr(proto, msg_struct)()
     msg_struct.ParseFromString(msg)
@@ -231,12 +253,13 @@ def parse_response(response, attribute):
     """
     Parses the response.
 
-    :param response: Response string fro parsing.
+    :param response: Response string for parsing.
     :type response: str
     :param attribute: Attribute of message structure.
     :type attribute: str
 
-    :returns: A protobuf message structure.
+    :return: A protobuf message structure.
+    :rtype: zmq_transport.common.message_pb2
     """
     try:
         iden_struct = deserialize_msg("Identifier", response)
@@ -253,8 +276,8 @@ def get_sync_id():
     """
     Helper function to generate a unique sync_id.
 
-    :returns: A unique id generated from uuid.uuid4
-    :type: str
+    :return: A unique id generated from uuid.uuid4
+    :rtype: str
     """
     return str(uuid.uuid4())
 
@@ -263,7 +286,8 @@ def get_target_info():
     """
     Helper function to get the current target replica info.
 
-    :returns: dict
+    :return: Target information.
+    :rtype: dict
     """
     info = {}
     info["target_replica_uid"] = str(uuid.uuid4())
@@ -277,7 +301,8 @@ def get_source_info():
     """
     Helper function to get the the source replica information at the target.
 
-    :returns: dict
+    :return: Source information.
+    :rtype: dict
     """
     info = {}
     info["source_last_known_generation"] = 8
