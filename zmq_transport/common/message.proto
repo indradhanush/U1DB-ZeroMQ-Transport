@@ -107,8 +107,8 @@ message GetDocumentResponse {
     required string doc_content = 3;
 
     // Target replica transaction for the current document.
-    required int32 target_generation = 4;
-    required string target_trans_id = 5;
+    optional int32 target_generation = 4;
+    optional string target_trans_id = 5;
 }
 
 
