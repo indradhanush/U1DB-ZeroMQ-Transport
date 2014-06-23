@@ -45,10 +45,10 @@ discuss
   `Publisher.unsubscribe()` methods. Probably make this wrapper as a
   decorator for easier patching of other functions.
 
-* __IMPORTANT:__ Find a way for
+* ~~__IMPORTANT:__ Find a way for
   `zmq_transport.u1db.zmq_target.ZMQSyncTarget.get_sync_info` to
   return the response after the request. Or else backwards
-  compatibility is broken.
+  compatibility is broken.~~
 
 * Might rename package `zmq_transport` into `zmtp`. Concise. Sounds
   better. :)
@@ -75,5 +75,13 @@ discuss
 * __Server Handler:__ Add functionality to do a db transaction in
   handle_put_sync_info_request.
 
-* __Narrow down \__init\__.py__: Remove un-needed dependencies from
+* **Narrow down __init__.py**: Remove un-needed dependencies from
   u1db.\__init\__ module.
+
+* __doc.get_json():__ This method returns a jsonified string of the
+  doc content. Might remove this functionality from u1db.DocumentBase
+p  ; Or just dump the json back to string before passing over for
+  protobuf serialization.
+
+* __self.sync_id and self.source_generation:__ May put these into ZMQSyncTarget
+
