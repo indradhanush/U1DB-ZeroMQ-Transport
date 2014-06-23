@@ -103,12 +103,13 @@ message GetDocumentResponse {
 
     // Document information.
     required string doc_id = 1;
-    required int32 doc_generation = 2;
-    required string doc_content = 3;
+    required int32 doc_rev = 2;
+    required int32 doc_generation = 3;
+    required string doc_content = 4;
 
     // Target replica transaction for the current document.
-    required int32 target_generation = 4;
-    required string target_trans_id = 5;
+    optional int32 target_generation = 5;
+    optional string target_trans_id = 6;
 }
 
 

@@ -24,8 +24,10 @@ from zmq_transport.common.utils import (
     get_source_replica_uid
 )
 
-from zmq_transport.u1db import SyncTarget
-
+from zmq_transport.u1db import (
+    SyncTarget,
+    Document
+)
 
 class ZMQSyncTarget(ZMQClientBase, SyncTarget):
     """
@@ -47,6 +49,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             self.endpoints = endpoints
             self.sync_required = False
             self.sync_info = None
+            self.source_generation = self._get_source_generation()
         else:
             raise TypeError("Expected type(endpoints) list. Got %s" %
                             (type(endpoints)))
@@ -88,6 +91,13 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :type endpoints: list
         """
         return ZMQSyncTarget(endpoints[0], endpoints[1])
+
+    def _get_source_generation(self):
+        """
+        Returns the current source generation.
+        # TODO: Implement actual functionality. Arbit for now.
+        """
+        return 20
 
     def get_sync_info(self, source_replica_uid):
         """
@@ -282,6 +292,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = self.speaker.recv()[0]
         response = parse_response(response, "get_document_response")
         return {"doc_id": response.doc_id,
+                "doc_rev": response.doc_rev
                 "doc_generation":response.doc_generation,
                 "doc_content": response.doc_content,
                 "target_generation": response.target_generation,
@@ -291,9 +302,34 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                       last_known_generation, last_known_trans_id,
                       return_doc_cb, ensure_callback=None):
         """
-        Incorporate the documents sent from the source replica.
+        Send docs changed at source one at a time, and then incorporate docs
+        changed at target.
         """
-        pass
+        # Send docs changed at source.
+        source_transaction_id = "TRANS-ID" # has to be unique.
+        sync_id = get_sync_id()
+        for doc, gen, trans_id in docs_by_generation:
+            source_transaction_id, inserted = self.send_doc_info(
+                source_replica_uid, sync_id, doc.doc_id, gen, doc.get_json(),
+                self.source_generation, source_transaction_id)
+            if not inserted:
+                # TODO: Maybe retry? or Report?
+                pass
+
+        docs_received_count = 0
+        while True:
+            doc_recvd = self.get_doc_at_target(source_replica_uid, docs_received_count)
+            if doc_recvd.get("doc_id"):
+                docs_received_count += 1
+                doc = Document(doc_recvd["doc_id"], doc_recvd["doc_rev"],
+                               doc_recvd["doc_content"])
+                return_doc_cb(doc, doc_recvd["doc_generation"], doc_recvd["target_generation"])
+
+            # Last Doc was sent.
+            if doc_recvd.get("doc_generation") and doc_recvd.get("target_trans_id"):
+                break
+
+        # TODO: Return new_generation and new_transaction_id
 
     ################### Start of Application logic handlers. ##################
 
