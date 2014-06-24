@@ -141,7 +141,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.msg_struct = create_send_document_request_msg(
             source_replica_uid="UID1", sync_id="SYNC1", doc_id="DOC1",
             doc_generation=1, doc_content="Dummy text.", source_generation=2,
-            source_trans_id="TRANS-ID")
+            source_transaction_id="TRANS-ID")
 
     def test_create_send_document_request_msg(self):
         self.assertIsInstance(self.msg_struct, proto.SendDocumentRequest)
@@ -151,7 +151,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(self.msg_struct.doc_generation, 1)
         self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
         self.assertEqual(self.msg_struct.source_generation, 2)
-        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
@@ -163,18 +163,18 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.doc_generation, 1)
         self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
         self.assertEqual(parsed_msg_struct.source_generation, 2)
-        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
 
 
 class SendDocumentResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_send_document_response_msg(
-            source_trans_id="TRANS-ID", inserted=True)
+            source_transaction_id="TRANS-ID", inserted=True)
 
     def test_create_send_document_response_msg(self):
         self.assertIsInstance(self.msg_struct, proto.SendDocumentResponse)
-        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.inserted, True)
         self.msg_struct.inserted = False
         self.assertEqual(self.msg_struct.inserted, False)
@@ -183,7 +183,7 @@ class SendDocumentResponseTest(BaseMessageTest):
         serialized_str = serialize_msg(self.msg_struct)
         parsed_msg_struct = deserialize_msg("SendDocumentResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SendDocumentResponse)
-        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.inserted, True)
 
 
@@ -213,12 +213,13 @@ class GetDocumentResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_get_document_response_msg(
-            doc_id="DOC1", doc_generation=1, doc_content="Dummy text.",
+            doc_id="DOC1", doc_rev=2, doc_generation=1, doc_content="Dummy text.",
             target_generation=2, target_trans_id="TAR-ID")
 
     def test_create_get_document_response_msg(self):
         self.assertIsInstance(self.msg_struct, proto.GetDocumentResponse)
         self.assertEqual(self.msg_struct.doc_id, "DOC1")
+        self.assertEqual(self.msg_struct.doc_rev, 2)
         self.assertEqual(self.msg_struct.doc_generation, 1)
         self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
         self.assertEqual(self.msg_struct.target_generation, 2)
@@ -239,35 +240,36 @@ class PutSyncInfoRequestTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_put_sync_info_request_msg(
-            sync_id="SYNC1", source_replica_uid="REP-ID", source_generation=1,
-            source_trans_id="TRANS-ID")
+            sync_id="SYNC1", source_replica_uid="REP-ID", source_replica_generation=1,
+            source_transaction_id="TRANS-ID")
 
     def test_create_put_sync_info_request_msg(self):
         self.assertIsInstance(self.msg_struct, proto.PutSyncInfoRequest)
         self.assertEqual(self.msg_struct.sync_id, "SYNC1")
         self.assertEqual(self.msg_struct.source_replica_uid, "REP-ID")
-        self.assertEqual(self.msg_struct.source_generation, 1)
-        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_replica_generation, 1)
+        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg("PutSyncInfoRequest", serialized_str)
+        parsed_msg_struct = deserialize_msg("PutSyncInfoRequest",
+                                            serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoRequest)
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
         self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-ID")
-        self.assertEqual(parsed_msg_struct.source_generation, 1)
-        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.source_replica_generation, 1)
+        self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
 
 
 class PutSyncInfoResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_put_sync_info_response_msg(
-            source_trans_id="TRANS-ID", inserted=True)
+            source_transaction_id="TRANS-ID", inserted=True)
 
     def test_create_put_sync_info_response_msg(self):
         self.assertIsInstance(self.msg_struct, proto.PutSyncInfoResponse)
-        self.assertEqual(self.msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.inserted, True)
         self.msg_struct.inserted = False
         self.assertEqual(self.msg_struct.inserted, False)
@@ -276,7 +278,7 @@ class PutSyncInfoResponseTest(BaseMessageTest):
         serialized_str = serialize_msg(self.msg_struct)
         parsed_msg_struct = deserialize_msg("PutSyncInfoResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoResponse)
-        self.assertEqual(parsed_msg_struct.source_trans_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(parsed_msg_struct.inserted, True)
 
 
