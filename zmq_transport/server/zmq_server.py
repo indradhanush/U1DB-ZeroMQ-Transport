@@ -13,6 +13,7 @@ from zmq_transport.config.protobuf_settings import (
     MSG_TYPE_ZMQ_VERB,
     MSG_TYPE_GET_SYNC_INFO_REQUEST,
     MSG_TYPE_SEND_DOCUMENT_REQUEST,
+    MSG_TYPE_ALL_SENT_REQUEST,
     MSG_TYPE_GET_DOCUMENT_REQUEST,
     MSG_TYPE_PUT_SYNC_INFO_REQUEST
 )
@@ -26,6 +27,7 @@ from zmq_transport.common.utils import (
     create_put_sync_info_response_msg,
     create_send_document_response_msg,
     create_get_document_response_msg,
+    create_all_sent_response_msg,
     get_target_info,
     get_source_info,
     get_doc_info
@@ -207,9 +209,16 @@ class Server(ZMQBaseComponent):
         connection_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
         response = []
 
-        zmq_verb_str, sync_type_str, iden_str = msg
-        # Do something with zmq_verb_str and sync_type_str later.
+        if len(msg) == 3:
+            zmq_verb_str, sync_type_str, iden_str = msg
+            # TODO: Do something with zmq_verb_str and sync_type_str later.
+        elif len(msg) == 1:
+            iden_str = msg[0]
+        else:
+            return
         try:
+            import pdb
+
             iden_struct = deserialize_msg("Identifier", iden_str)
         except DecodeError:
             # Silently fail for now. Implementation of recover sync
@@ -223,7 +232,6 @@ class Server(ZMQBaseComponent):
                 except DecodeError:
                     # Silently fail.
                     return
-
         to_send = [connection_id, request_id, "", response]
         self.frontend.send(to_send)
 
@@ -286,6 +294,8 @@ def identify_msg(iden_struct):
         return handle_get_sync_info_request(iden_struct.subscribe_request)
     elif iden_struct.type == MSG_TYPE_SEND_DOCUMENT_REQUEST:
         return handle_send_doc_request(iden_struct.send_document_request)
+    elif iden_struct.type == MSG_TYPE_ALL_SENT_REQUEST:
+        return handle_all_sent_request(iden_struct.all_sent_request)
     elif iden_struct.type == MSG_TYPE_GET_DOCUMENT_REQUEST:
         return handle_get_doc_request(iden_struct.get_document_request)
     elif iden_struct.type == MSG_TYPE_PUT_SYNC_INFO_REQUEST:
@@ -340,6 +350,37 @@ def handle_send_doc_request(send_doc_req_struct):
                             send_document_response=send_doc_resp_struct)
 
 
+def handle_all_sent_request(all_sent_req_struct):
+    """
+    Returns an AllSentResponse message.
+
+    :return: AllSentResponse message wrapped in an Identifier message.
+    :rtype: zmq_transport.common.message_pb2.Identifier
+    """
+    def get_docs_to_send():
+        """
+        Returns a list of document id and generations that needs to be sent to
+        the source.
+
+        TODO: Implement functionality to return docs. Arbit for now.
+        """
+        return [("D1", 2), ("D2", 6), ("D3", 13), ("D4", 9)]
+
+    # TODO: First check if the last doc has been successfully
+    # inserted. Or else wait. or timeout maybe? or send some error
+    # signal to source ?
+
+    target_info = get_target_info()
+    docs_to_send = get_docs_to_send()
+    all_sent_resp_struct = create_all_sent_response_msg(
+        items=docs_to_send,
+        target_generation=target_info["target_replica_generation"],
+        target_trans_id=target_info["target_replica_trans_id"]
+    )
+    return proto.Identifier(type=proto.Identifier.ALL_SENT_RESPONSE,
+                            all_sent_response=all_sent_resp_struct)
+
+
 def handle_get_doc_request(get_doc_req_struct):
     """
     Returns a requested document.
@@ -348,12 +389,13 @@ def handle_get_doc_request(get_doc_req_struct):
     :rtype: zmq_transport.common.message_pb2.Identifier
     """
     # TODO: Fetch doc from db.
-    doc_id, doc_generation, doc_content = get_doc_info()
+    doc_id, doc_rev, doc_generation, doc_content = get_doc_info()
     target_generation = 25
     target_trans_id = "TARGET-ID"
     get_doc_resp_struct = create_get_document_response_msg(
-        doc_id=doc_id, doc_generation=doc_generation, doc_content=doc_content,
-        target_generation=target_generation, target_trans_id=target_trans_id)
+        doc_id=doc_id, doc_rev=doc_rev,  doc_generation=doc_generation,
+        doc_content=doc_content, target_generation=target_generation,
+        target_trans_id=target_trans_id)
     return proto.Identifier(type=proto.Identifier.GET_DOCUMENT_RESPONSE,
                             get_document_response=get_doc_resp_struct)
 

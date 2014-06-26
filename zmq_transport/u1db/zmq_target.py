@@ -18,6 +18,7 @@ from zmq_transport.common.utils import (
     create_put_sync_info_request_msg,
     create_send_document_request_msg,
     create_get_document_request_msg,
+    create_all_sent_request_msg,
     parse_response,
     get_sync_id,
     get_doc_info,
@@ -292,7 +293,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = self.speaker.recv()[0]
         response = parse_response(response, "get_document_response")
         return {"doc_id": response.doc_id,
-                "doc_rev": response.doc_rev
+                "doc_rev": response.doc_rev,
                 "doc_generation":response.doc_generation,
                 "doc_content": response.doc_content,
                 "target_generation": response.target_generation,
@@ -304,6 +305,24 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         Send docs changed at source one at a time, and then incorporate docs
         changed at target.
+
+        :param docs_by_generation: A list of documents sorted by generation to
+                                   send to target.
+        :type docs_by_generation: list
+        :param source_replica_uid: Unique identifier of replica at source.
+        :type source_replica_uid: str
+        :param last_known_generation: Last known generation of the target.
+        :type last_known_generation: int
+        :param last_known_trans_id: Last known transaction id of the target.
+        :type last_known_trans_id: str
+        :param return_doc_cb: Callback method to invoke when a document is
+                              received.
+        :type return_doc_cb: method
+        :param ensure_callback: Callback for tests.
+        :type ensure_callback: method.
+
+        :return: Latest transaction generation and id of target.
+        :rtype: tuple
         """
         # Send docs changed at source.
         source_transaction_id = "TRANS-ID" # has to be unique.
@@ -316,20 +335,42 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 # TODO: Maybe retry? or Report?
                 pass
 
-        docs_received_count = 0
-        while True:
-            doc_recvd = self.get_doc_at_target(source_replica_uid, docs_received_count)
+        # Intermediate PING-ACK. Also gets notified about incoming
+        # docs beforehand.
+        all_sent_req_struct = create_all_sent_request_msg(
+            total_docs_sent=len(docs_by_generation), all_sent=True)
+        iden_all_sent_req = proto.Identifier(
+            type=proto.Identifier.ALL_SENT_REQUEST,
+            all_sent_request=all_sent_req_struct)
+        str_iden_all_sent_req = serialize_msg(iden_all_sent_req)
+        import pdb
+
+        # Frame 1: AllSentRequest
+        self.speaker.send([str_iden_all_sent_req])
+
+        # Frame 1: AllSentResponse
+        response = self.speaker.recv()[0]
+        response = parse_response(response, "all_sent_response")
+
+        # TODO: What to do with response.doc_info[] ; Maybe request
+        # for each doc by id?
+        docs_list = response.doc_info[:]
+
+        docs_to_receive = len(response.doc_info)
+        docs_received = 0
+        while docs_to_receive != 0:
+            doc_recvd = self.get_doc_at_target(source_replica_uid, sync_id,
+                                               docs_received)
             if doc_recvd.get("doc_id"):
-                docs_received_count += 1
+                docs_received += 1
+                docs_to_receive -= 1
                 doc = Document(doc_recvd["doc_id"], doc_recvd["doc_rev"],
                                doc_recvd["doc_content"])
-                return_doc_cb(doc, doc_recvd["doc_generation"], doc_recvd["target_generation"])
+                return_doc_cb(doc, doc_recvd["doc_generation"],
+                              doc_recvd["target_generation"])
 
-            # Last Doc was sent.
-            if doc_recvd.get("doc_generation") and doc_recvd.get("target_trans_id"):
-                break
+        return response.target_generation, response.target_trans_id
 
-        # TODO: Return new_generation and new_transaction_id
 
     ################### Start of Application logic handlers. ##################
 
@@ -344,15 +385,29 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
 
             sync_id = get_sync_id() # Ideally will be set as an
             # attribute of sync.
-            doc_id, doc_generation, doc_content = get_doc_info()
-            send_doc_response = self.send_doc_info(
-                source_replica_uid, sync_id, doc_id, doc_generation, doc_content,
-                25, sync_info_response[4])
-            print send_doc_response
 
-            target_docs_response = self.get_doc_at_target(source_replica_uid,
-                                                          sync_id, 0)
-            print target_docs_response
+            # Unpacking response
+            target_replica_uid, target_replica_generation,\
+                target_replica_trans_id, source_last_known_generation,\
+                source_last_known_trans_id = sync_info_response
+
+            from zmq_transport.u1db import Document
+            from uuid import uuid4
+            docs_by_generation = []
+            for i in range(1, 6):
+                doc_id = str(uuid4())
+                doc = Document(doc_id=doc_id, rev=0)
+                trans_id = str(uuid4())
+                docs_by_generation.append((doc, i, trans_id))
+
+            # Dummy method to simulate sync_exchange smoothly. Will be removed.
+            def return_doc_cb(*args):
+                pass
+            # Sync exchange.
+            print "Sync Exchange: "
+            print self.sync_exchange(docs_by_generation, source_replica_uid,
+                                     source_last_known_generation,
+                                     source_last_known_trans_id, return_doc_cb)
 
             record_sync_response =  self.record_sync_info(
                 source_replica_uid, sync_info_response[3],

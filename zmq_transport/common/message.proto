@@ -82,12 +82,37 @@ message SendDocumentRequest {
 }
 
 
-// A SendDocumentResponse message informs the source about a successful sync of an
-// individual document.
+// A SendDocumentResponse message informs the source about a successful sync
+// of an individual document.
 message SendDocumentResponse {
     required string source_transaction_id = 1;
     required bool inserted = 2;
 }
+
+
+// A DocInfo message contains the doc_id and the doc_generation of a particular
+// document.
+message DocInfo {
+    required string doc_id = 1;
+    required int32 doc_generation = 2;
+}
+
+// An AllSentRequest message is used to indicate that all the documents have
+// been send. It acts like a PING request.
+message AllSentRequest {
+    required int32 total_docs_sent = 1;
+    required bool all_sent = 2;
+}
+
+
+// An AllSentResponse message is used to send a list of documents that will be
+// sent shortly. It also acts like an ACK to an AllSenRequest message.
+message AllSentResponse {
+    required int32 target_generation = 1;
+    required string target_trans_id = 2;
+    repeated DocInfo doc_info = 3;
+}
+
 
 // A GetDocumentRequest message is sent from source to get the documents that
 // were changed in the target since their last sync.
@@ -142,10 +167,13 @@ message Identifier {
         GET_SYNC_INFO_RESPONSE = 6;
         SEND_DOCUMENT_REQUEST = 7;
         SEND_DOCUMENT_RESPONSE = 8;
-        GET_DOCUMENT_REQUEST = 9;
-        GET_DOCUMENT_RESPONSE = 10;
-        PUT_SYNC_INFO_REQUEST = 11;
-        PUT_SYNC_INFO_RESPONSE = 12;
+        DOC_INFO = 9;
+        ALL_SENT_REQUEST = 10;
+        ALL_SENT_RESPONSE = 11;
+        GET_DOCUMENT_REQUEST = 12;
+        GET_DOCUMENT_RESPONSE = 13;
+        PUT_SYNC_INFO_REQUEST = 14;
+        PUT_SYNC_INFO_RESPONSE = 15;
     }
 
     required Type type = 1;
@@ -158,9 +186,12 @@ message Identifier {
     optional GetSyncInfoResponse get_sync_info_response= 7;
     optional SendDocumentRequest send_document_request = 8;
     optional SendDocumentResponse send_document_response = 9;
-    optional GetDocumentRequest get_document_request = 10;
-    optional GetDocumentResponse get_document_response = 11;
-    optional PutSyncInfoRequest put_sync_info_request = 12;
-    optional PutSyncInfoResponse put_sync_info_response = 13;
+    optional DocInfo doc_info = 10;
+    optional AllSentRequest all_sent_request = 11;
+    optional AllSentResponse all_sent_response = 12;
+    optional GetDocumentRequest get_document_request = 13;
+    optional GetDocumentResponse get_document_response = 14;
+    optional PutSyncInfoRequest put_sync_info_request = 15;
+    optional PutSyncInfoResponse put_sync_info_response = 16;
 }
 
