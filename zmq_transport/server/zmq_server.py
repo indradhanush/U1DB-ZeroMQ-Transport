@@ -1,3 +1,7 @@
+"""
+ZeroMQ Server.
+"""
+
 # ZeroMQ Imports
 import zmq
 from zmq.eventloop.zmqstream import ZMQStream
@@ -217,8 +221,6 @@ class Server(ZMQBaseComponent):
         else:
             return
         try:
-            import pdb
-
             iden_struct = deserialize_msg("Identifier", iden_str)
         except DecodeError:
             # Silently fail for now. Implementation of recover sync

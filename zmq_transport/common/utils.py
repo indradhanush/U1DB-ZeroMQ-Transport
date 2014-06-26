@@ -3,6 +3,10 @@ Common Utilities.
 """
 # System Imports
 import uuid
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 # Protobuf Imports
 from google.protobuf.message import DecodeError
@@ -374,8 +378,8 @@ def get_doc_info():
     doc_id = str(uuid.uuid4())
     doc_rev = 5
     doc_generation = 18
-    doc_content = "Random garbled text for simulation."
-
+    doc_content = {"data": "Random garbled text for simulation."}
+    doc_content = json.dumps(doc_content)
     return (doc_id, doc_rev, doc_generation, doc_content)
 
 

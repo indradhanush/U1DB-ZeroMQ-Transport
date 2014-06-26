@@ -1,6 +1,11 @@
 """
 SyncTarget API implementation to a remote ZMQ server.
 """
+# System Imports
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 # ZMQ imports
 import zmq
@@ -343,7 +348,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             type=proto.Identifier.ALL_SENT_REQUEST,
             all_sent_request=all_sent_req_struct)
         str_iden_all_sent_req = serialize_msg(iden_all_sent_req)
-        import pdb
 
         # Frame 1: AllSentRequest
         self.speaker.send([str_iden_all_sent_req])
@@ -391,12 +395,15 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 target_replica_trans_id, source_last_known_generation,\
                 source_last_known_trans_id = sync_info_response
 
+            # Simulating docs_by_generation
             from zmq_transport.u1db import Document
             from uuid import uuid4
             docs_by_generation = []
             for i in range(1, 6):
                 doc_id = str(uuid4())
-                doc = Document(doc_id=doc_id, rev=0)
+                doc_content = {"data": "Random bits of data."}
+                doc_content = json.dumps(doc_content)
+                doc = Document(doc_id=doc_id, rev=0, json=doc_content)
                 trans_id = str(uuid4())
                 docs_by_generation.append((doc, i, trans_id))
 
