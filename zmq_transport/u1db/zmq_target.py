@@ -292,7 +292,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = self.speaker.recv()[0]
         response = parse_response(response, "get_document_response")
         return {"doc_id": response.doc_id,
-                "doc_rev": response.doc_rev
+                "doc_rev": response.doc_rev,
                 "doc_generation":response.doc_generation,
                 "doc_content": response.doc_content,
                 "target_generation": response.target_generation,
