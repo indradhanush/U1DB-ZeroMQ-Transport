@@ -151,7 +151,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
     def record_sync_info(self, source_replica_uid, source_replica_generation,
                          source_transaction_id):
         """
-        Informs the target, about its latest state after completion of the
+        Informs the target, about source's latest state after completion of the
         sync_exchange.
 
         :return: source_transaction_id and inserted status.
@@ -199,7 +199,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         After "GetSyncInfoRequest" message has been sent and
         "GetSyncInfoResponse" is received, the source will now know which
         documents have changed at source since the last sync. This method is
-        used to send those those documents one at a time.
+        used to send those those documents one at a time to the target.
 
         :param source_replica_uid: The uid that identifies the source db.
         :type source_replica_uid: str
@@ -233,7 +233,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         str_iden_send_doc_req = serialize_msg(iden_send_doc_req)
 
         # Create SyncType message.
-        sync_type_struct = create_sync_type_msg(sync_type="sync-to")
+        sync_type_struct = create_sync_type_msg(sync_type="sync-from")
         iden_sync_type = proto.Identifier(type=proto.Identifier.SYNC_TYPE,
                                           sync_type=sync_type_struct)
         str_iden_sync_type = serialize_msg(iden_sync_type)

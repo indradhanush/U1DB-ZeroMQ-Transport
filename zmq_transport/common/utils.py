@@ -13,7 +13,13 @@ from google.protobuf.message import DecodeError
 
 # Local Imports
 from zmq_transport.common import message_pb2 as proto
-
+from zmq_transport.config.u1db_settings import (
+    TARGET_REPLICA_UID_KEY,
+    TARGET_REPLICA_GEN_KEY,
+    TARGET_REPLICA_TRANS_ID_KEY,
+    SOURCE_LAST_KNOWN_GEN_KEY,
+    SOURCE_LAST_KNOWN_TRANS_ID
+)
 
 ######################## Start of Protobuf utilities. ########################
 
@@ -350,9 +356,9 @@ def get_target_info():
     :rtype: dict
     """
     info = {}
-    info["target_replica_uid"] = str(uuid.uuid4())
-    info["target_replica_generation"] = 12
-    info["target_replica_trans_id"] = str(uuid.uuid4())
+    info[TARGET_REPLICA_UID_KEY] = str(uuid.uuid4())
+    info[TARGET_REPLICA_GEN_KEY] = 12
+    info[TARGET_REPLICA_TRANS_ID_KEY] = str(uuid.uuid4())
 
     return info
 
@@ -365,8 +371,8 @@ def get_source_info():
     :rtype: dict
     """
     info = {}
-    info["source_last_known_generation"] = 8
-    info["source_last_known_trans_id"] = str(uuid.uuid4())
+    info[SOURCE_LAST_KNOWN_GEN_KEY] = 8
+    info[SOURCE_LAST_KNOWN_TRANS_ID] = str(uuid.uuid4())
 
     return info
 
