@@ -144,9 +144,9 @@ class ServerTest(BaseServerTest):
             server._prepare_reactor()
 
             # TODO: Check if zmqstream_mock is called withing wrap_zmqstream
-            self.assertEqual(server.frontend.wrap_zmqstream.call_count, 1)
-            self.assertEqual(server.publisher.wrap_zmqstream.call_count, 1)
-            self.assertEqual(server.backend.wrap_zmqstream.call_count, 1)
+            self.assertEqual(server.frontend.wrap_zmqstream.called, True)
+            self.assertEqual(server.publisher.wrap_zmqstream.called, True)
+            self.assertEqual(server.backend.wrap_zmqstream.called, True)
 
             expected = [(("on_send", server.handle_snd_update_client), ),
                         (("on_recv", server.handle_rcv_update_client), )]
