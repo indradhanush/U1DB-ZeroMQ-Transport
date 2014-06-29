@@ -5,5 +5,4 @@
 .*
 *.*~
 venv/
-send_files/
-recv_files/
+htmlcov/
