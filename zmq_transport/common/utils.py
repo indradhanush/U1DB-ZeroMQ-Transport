@@ -41,6 +41,33 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
     return msg_struct
 
 
+def create_ping_msg():
+    """
+    Creates a zmq_transport.common.message_pb2.Ping message
+    structure.
+
+    :return: Ping message.
+    :rtype: zmq_transport.common.message_pb2.Ping
+    """
+    return _create_protobuf_msg("Ping")
+
+
+def create_client_info_msg(**kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.ClientInfo message
+    structure.
+
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of ClientInfo message
+                   structure.
+    :type kwargs: dict
+
+    :return: ClientInfo message.
+    :rtype: zmq_transport.common.message_pb2.ClientInfo
+    """
+    return _create_protobuf_msg("ClientInfo", **kwargs)
+
+
 def create_subscribe_request_msg(**kwargs):
     """
     Creates a zmq_transport.common.message_pb2.SubscribeRequest message

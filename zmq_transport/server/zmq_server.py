@@ -219,6 +219,7 @@ class Server(ZMQBaseComponent):
         elif len(msg) == 1:
             iden_str = msg[0]
         else:
+            # TODO: Maybe send client an error.
             return
         try:
             iden_struct = deserialize_msg("Identifier", iden_str)

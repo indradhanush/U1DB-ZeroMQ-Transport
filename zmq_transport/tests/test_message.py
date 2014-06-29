@@ -16,6 +16,39 @@ class BaseMessageTest(unittest.TestCase):
         self.msg_struct = None
 
 
+class PingTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_ping_msg()
+
+    def test_create_ping_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.Ping)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("Ping", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.Ping)
+        self.assertEqual(parsed_msg_struct, self.msg_struct)
+
+
+class ClientInfoTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_client_info_msg(client_id="C-ID",
+                                                 request_id="REQ-ID")
+
+    def test_create_client_info_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.ClientInfo)
+        self.assertEqual(self.msg_struct.client_id, "C-ID")
+        self.assertEqual(self.msg_struct.request_id, "REQ-ID")
+
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("ClientInfo", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.ClientInfo)
+        self.assertEqual(parsed_msg_struct.client_id, "C-ID")
+        self.assertEqual(parsed_msg_struct.request_id, "REQ-ID")
+
+
 class SubscribeRequestTest(BaseMessageTest):
 
     def setUp(self):

@@ -4,16 +4,16 @@ from zmq.eventloop.zmqstream import ZMQStream
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
-from zmq_transport.config import settings
+from zmq_transport.config.settings import ENDPOINT_APPLICATION_HANDLER
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 
-class ApplicationSocket(ZMQBaseSocket):
+class ZMQAppSocket(ZMQBaseSocket):
     """
     Base class for sockets at SOLEDAD. Derived from ZMQBaseSocket.
     """
     def __init__(self, socket, endpoint):
         """
-        Initialize an ApplicationSocket instance.
+        Initialize a ZMQAppSocket instance.
 
         :param socket: ZeroMQ socket.
         :type socket: zmq.Context.socket instance.
@@ -34,7 +34,7 @@ class ApplicationSocket(ZMQBaseSocket):
 # See: IRC logs: http://bit.ly/1tczZJC
 # TODO: Or a ROUTER/DEALER combo. 
 # See: IRC logs: http://bit.ly/1ijJxNJ
-class ServerHandler(ApplicationSocket):
+class ServerHandler(ZMQAppSocket):
     """
     zmq.DEALER socket.
     Used for handling data from Application Logic to send to zmq.PUB socket
@@ -47,29 +47,30 @@ class ServerHandler(ApplicationSocket):
         :param context: ZeroMQ Context.
         :type context: zmq.Context instance.
         """
-        ApplicationSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
+        ZMQAppSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
         
     def run(self):
         """
-        Overrides ApplicationSocket.run() method.
+        Overrides ZMQAppSocket.run() method.
         """
         self._socket.connect(self._endpoint)
 
 
-class Application(ZMQBaseComponent):
+class ZMQApp(ZMQBaseComponent):
     """
-    Application instance. Uses a ServerHandler instance.
+    ZMQApp instance. Uses a ServerHandler instance.
     """
-    def __init__(self, endpoint):
+    def __init__(self, state):
         """
-        Initialize instance of type Application.
+        Initialize instance of type ZMQApp.
 
-        :param endpoint: Endpoint of Server.
-        :type endpoint: str
+        :param state: A ServerState instance.
+        :type endpoint: zmq_transport.u1db.server_state.ServerState
         """
         ZMQBaseComponent.__init__(self)
-        self.server_handler = ServerHandler(endpoint, self._context)
-
+        self.state = state
+        self.server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
+                                            self._context)
 
     def _prepare_reactor(self):
         """
