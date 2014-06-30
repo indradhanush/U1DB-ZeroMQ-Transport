@@ -1,6 +1,10 @@
 argparse>=1.2.1
 backports.ssl-match-hostname>=3.4.0.2
+coverage>=3.7.1
 distribute>=0.6.24
+mock>=1.0.1
 protobuf>=2.5.0
-pyzmq>=14.1.1
+py>=1.4.20
+pyzmq>=14.3.1
+simplejson>=3.5.3
 wsgiref>=0.1.2
