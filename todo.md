@@ -44,3 +44,44 @@ discuss
 * __IMPORTANT:__ Add authentication wrapper over `Publisher.subscribe()` and
   `Publisher.unsubscribe()` methods. Probably make this wrapper as a
   decorator for easier patching of other functions.
+
+* ~~__IMPORTANT:__ Find a way for
+  `zmq_transport.u1db.zmq_target.ZMQSyncTarget.get_sync_info` to
+  return the response after the request. Or else backwards
+  compatibility is broken.~~
+
+* Might rename package `zmq_transport` into `zmtp`. Concise. Sounds
+  better. :)
+
+* __Doc Chunking:__ String length in SendDocumentRequest is not
+  limited or known now. Needs to be handled while implementing
+  document chunking.
+
+* __Parallelizing SendDoc and GetDoc:__ <db4>: This is cool because
+  GetDocumentRequests can be parallelized, and we just enfoce
+  insertion of the documents in the correct order in the client by
+  using a lock or a queue. Maybe you can thing about a way to do that
+  for PutDocumentRequests also, but I'm not sure how would be the best
+  way to do it. Documents always have to be inserted in the correct
+  order, either in source and in target, so the "other replica"
+  metadata is correctly maintained. __Implement a lock enforced queue maybe.__
+
+* __Utils module:__ Variables of dict info in get_target_info function
+  need to be stored somewhere in a target_settings file.
+
+* __Recover Sync Implentation:__ On a `DecodeError`, the code silently
+  fails fow now. RecoverSync Implementation could fill this in.
+  
+* __Server Handler:__ Add functionality to do a db transaction in
+  handle_put_sync_info_request.
+
+* **Narrow down __init__.py**: Remove un-needed dependencies from
+  u1db.\__init\__ module.
+
+* __doc.get_json():__ This method returns a jsonified string of the
+  doc content. Might remove this functionality from u1db.DocumentBase
+p  ; Or just dump the json back to string before passing over for
+  protobuf serialization.
+
+* __self.sync_id and self.source_generation:__ May put these into ZMQSyncTarget
+

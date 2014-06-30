@@ -5,11 +5,13 @@ from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
 from zmq_transport.config import settings
-from zmq_transport.common.message import KeyValueMsg
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
-from zmq_transport.common.utils import serialize_msg, deserialize_msg
-
+from zmq_transport.common.utils import (
+    serialize_msg,
+    deserialize_msg,
+    create_subscribe_request_msg
+)
 
 class ClientSocket(ZMQBaseSocket):
     """
@@ -26,7 +28,7 @@ class ClientSocket(ZMQBaseSocket):
         """
 
         ZMQBaseSocket.__init__(self, socket, endpoint)
-        self._socket.setsockopt(zmq.RCVTIMEO, 1000)
+        # self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
     def run(self):
         """
@@ -51,7 +53,13 @@ class Speaker(ClientSocket):
         :param context: ZeroMQ context.
         :type context: zmq.Context
         """
-        ClientSocket.__init__(self, context.socket(zmq.DEALER), endpoint)
+        ClientSocket.__init__(self, context.socket(zmq.REQ), endpoint)
+        # Force REQ socket to match request-reply pairs. Drops non
+        # matching replies silently.
+        self._socket.setsockopt(zmq.REQ_CORRELATE, 1)
+        # Allow sending a new request before a reply to a previous
+        # request is received.
+        self._socket.setsockopt(zmq.REQ_RELAXED, 1)
 
     def run(self):
         """
@@ -90,8 +98,10 @@ class Subscriber(ClientSocket):
         :param msg_type: Subscription Message Key
         :type msg_type: str
         """
-        msg = serialize_msg("SubscribeRequest", key=msg_type)
-        self._socket.setsockopt(zmq.SUBSCRIBE, msg)
+        msg_struct = create_subscribe_request_msg(key=msg_type)
+        str_msg = serialize_msg(msg_struct)
+        self._socket.setsockopt(zmq.SUBSCRIBE, str_msg)
+
 
     def unsubscribe(self, msg_type):
         """
@@ -121,7 +131,9 @@ class ZMQClientBase(ZMQBaseComponent):
         :type endpoint_client_handler: str
         :param endpoint_publisher: Endpoint of PUB socket on Server.
         :type endpoint_publisher: str
-        :returns: zmq_transport.client.ZMQClientBase instance.
+
+        :return: ZMQClientBase instance.
+        :rtype: zmq_transport.client.ZMQClientBase instance.
         """
         ZMQBaseComponent.__init__(self)
         self.speaker = Speaker(endpoint_client_handler, self._context)
@@ -169,7 +181,7 @@ class ZMQClientBase(ZMQBaseComponent):
         :param status: return result of socket.send_multipart(msg)
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
-        print "<CLIENT> Sent: ", msg[0]
+        print "<CLIENT> Sent: ", msg, status
 
     def handle_rcv_update(self, msg):
         """
@@ -178,7 +190,7 @@ class ZMQClientBase(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<CLIENT> Received: ", msg[0]
+        print "<CLIENT> Received: ", msg
         self.dataset.append(msg[0])
 
     def handle_pub_update(self, msg):
