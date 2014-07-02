@@ -21,7 +21,6 @@ from zmq_transport.config.protobuf_settings import (
     MSG_TYPE_GET_DOCUMENT_REQUEST,
     MSG_TYPE_PUT_SYNC_INFO_REQUEST
 )
-
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import (
@@ -32,10 +31,13 @@ from zmq_transport.common.utils import (
     create_send_document_response_msg,
     create_get_document_response_msg,
     create_all_sent_response_msg,
+    create_client_info_msg,
     get_target_info,
     get_source_info,
     get_doc_info
 )
+from zmq_transport.common.errors import ConnectionIDNotSet
+
 
 class ServerSocket(ZMQBaseSocket):
     """
@@ -77,12 +79,54 @@ class ApplicationHandler(ServerSocket):
         """
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
+        self._connection_id = None
 
     def run(self):
         """
         Overrides Serversocket.run() method.
         """
         ServerSocket.run(self)
+
+    def set_connection_id(self, connection_id, force_update=False):
+        """
+        Sets the connection_id of the ZMQApp DEALER socket.
+
+        :param connection_id: Unique connection id of the connection.
+        :type connection_id: str
+        :param force_update: Flag to force update connection id.
+        """
+        if not self._connection_id or force_update:
+            self._connection_id = connection_id
+
+    def get_connection_id(self):
+        """
+        Returns the connection_id of the associated ZMQApp DEALER socket.
+
+        :return: connection_id
+        :rtype: str
+        """
+        return self._connection_id
+
+    def send(self, msg):
+        """
+        Overridden method of zmq_transport.common.zmq_base.ZMQBaseSocket
+        to insert connection_id before sending a message to ZMQApp.
+        Raises ConnectionIDNotSet if self._connection_id is None.
+
+        :param msg: Message to be sent.
+        :type msg: str or list
+        """
+        connection_id = self.get_connection_id()
+        if not connection_id:
+            raise ConnectionIDNotSet
+        if isinstance(msg, list):
+            msg.insert(0, connection_id)
+        else:
+            msg = [connection_id, msg]
+
+        # Frame 1: ZMQApp Connection ID, Frame 2: ClientInfo, Frame3: msg
+        print len(msg)
+        ServerSocket.send(self, msg)
 
 
 class ClientHandler(ServerSocket):
@@ -207,36 +251,24 @@ class Server(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<SERVER> Received_from_Client: ", msg
+        print "<SERVER> Received_from_Client and Sent to App: ", msg
         # Message Format: [connection_id, request_id, delimiter_frame, msg]
         # msg: [ZMQVerb, SyncType, Identifier(Action Message)]
-        connection_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
-        response = []
+        # Note: msg becomes a list after unpacking. Before that, they
+        # are all elements of the original msg list.
 
-        if len(msg) == 3:
-            zmq_verb_str, sync_type_str, iden_str = msg
-            # TODO: Do something with zmq_verb_str and sync_type_str later.
-        elif len(msg) == 1:
-            iden_str = msg[0]
-        else:
-            # TODO: Maybe send client an error.
-            return
-        try:
-            iden_struct = deserialize_msg("Identifier", iden_str)
-        except DecodeError:
-            # Silently fail for now. Implementation of recover sync
-            # could go here.
-            return
-        else:
-            frame_response = identify_msg(iden_struct)
-            if frame_response:
-                try:
-                    response = serialize_msg(frame_response)
-                except DecodeError:
-                    # Silently fail.
-                    return
-        to_send = [connection_id, request_id, "", response]
-        self.frontend.send(to_send)
+        client_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
+        print type(client_id), type(request_id)
+
+        # TODO: Store the client_id and request_id in a hash table.
+        client_info_struct = create_client_info_msg(
+            client_id=client_id, request_id=request_id)
+
+        str_client_info = serialize_msg(client_info_struct)
+        to_send = [str_client_info]
+        to_send.extend(msg)
+
+        self.backend.send(to_send)
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -258,7 +290,8 @@ class Server(ZMQBaseComponent):
         """
         print "<SERVER> Received_from_App: ", msg
         connection_id, msg = msg
-        self.backend.send([connection_id, "PING-APP-OK"])
+        self.backend.set_connection_id(connection_id)
+
 
     ########################### End of callbacks. #############################
 
@@ -289,7 +322,9 @@ def identify_msg(iden_struct):
     :param iden_struct: Identifier message structure.
     :type iden_struct: zmq_transport.common.message_pb2.Identifier
     """
-    if iden_struct.type == MSG_TYPE_SYNC_TYPE:
+    if iden_struct.type == MSG_TYPE_PING:
+        return handle_ping(iden_struct.ping)
+    elif iden_struct.type == MSG_TYPE_SYNC_TYPE:
         return handle_sync_type(iden_struct.sync_type)
     elif iden_struct.type == MSG_TYPE_ZMQ_VERB:
         return handle_zmq_verb(iden_struct.zmq_verb)
