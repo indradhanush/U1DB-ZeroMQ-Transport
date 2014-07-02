@@ -11,8 +11,8 @@ message Ping {
 
 // A ClientInfo message is used to send information about a particular request.
 message ClientInfo {
-    required string client_id = 1;
-    required string request_id = 2;
+    required bytes client_id = 1;
+    required bytes request_id = 2;
 }
 
 // A SubscribeRequest message is used to subscribe a zmq.SUB socket to a
