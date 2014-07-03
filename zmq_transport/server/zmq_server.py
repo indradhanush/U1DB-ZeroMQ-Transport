@@ -1,6 +1,8 @@
 """
 ZeroMQ Server.
 """
+# System imports
+from Queue import Queue
 
 # ZeroMQ Imports
 import zmq
@@ -13,6 +15,7 @@ from google.protobuf.message import DecodeError
 # Local Imports
 from zmq_transport.config import settings
 from zmq_transport.config.protobuf_settings import (
+    MSG_TYPE_PING,
     MSG_TYPE_SYNC_TYPE,
     MSG_TYPE_ZMQ_VERB,
     MSG_TYPE_GET_SYNC_INFO_REQUEST,
@@ -95,6 +98,7 @@ class ApplicationHandler(ServerSocket):
         :type connection_id: str
         :param force_update: Flag to force update connection id.
         """
+
         if not self._connection_id or force_update:
             self._connection_id = connection_id
 
@@ -125,7 +129,6 @@ class ApplicationHandler(ServerSocket):
             msg = [connection_id, msg]
 
         # Frame 1: ZMQApp Connection ID, Frame 2: ClientInfo, Frame3: msg
-        print len(msg)
         ServerSocket.send(self, msg)
 
 
@@ -197,7 +200,8 @@ class Server(ZMQBaseComponent):
         self.frontend = ClientHandler(endpoint_frontend, self._context)
         self.backend = ApplicationHandler(endpoint_backend, self._context)
         self.publisher = Publisher(endpoint_publisher, self._context)
-
+        self.to_app = Queue()
+        self.to_client = Queue()
 
     def _prepare_reactor(self):
         """
@@ -210,9 +214,14 @@ class Server(ZMQBaseComponent):
         self.backend.wrap_zmqstream()
         self.frontend.register_handler("on_send", self.handle_snd_update_client)
         self.frontend.register_handler("on_recv", self.handle_rcv_update_client)
-        self.publisher.register_handler("on_send", self.handle_snd_update_client)
+        self.publisher.register_handler("on_send",
+                                        self.handle_snd_update_client)
         self.backend.register_handler("on_send", self.handle_snd_update_app)
         self.backend.register_handler("on_recv", self.handle_rcv_update_app)
+
+        self.check_to_app_callback = PeriodicCallback(self.check_to_app, 1000)
+        self.check_to_client_callback = PeriodicCallback(self.check_to_client,
+                                                         1000)
 
     def start(self):
         """
@@ -220,6 +229,8 @@ class Server(ZMQBaseComponent):
         """
         # Start Router frontend, backend and Publisher instances.
         self._prepare_reactor()
+        self.check_to_app_callback.start()
+        self.check_to_client_callback.start()
         self.frontend.run()
         self.backend.run()
         self.publisher.run()
@@ -251,24 +262,25 @@ class Server(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<SERVER> Received_from_Client and Sent to App: ", msg
+        print "<SERVER> Received_from_Client: ", msg
         # Message Format: [connection_id, request_id, delimiter_frame, msg]
         # msg: [ZMQVerb, SyncType, Identifier(Action Message)]
         # Note: msg becomes a list after unpacking. Before that, they
         # are all elements of the original msg list.
 
         client_id, request_id, _, msg = msg[0], msg[1], msg[2], msg[3:]
-        print type(client_id), type(request_id)
 
-        # TODO: Store the client_id and request_id in a hash table.
+        # TODO: Store the client_id and request_id in a hash table
+        # maybe instead of sending both client_id and request_id. Just
+        # send the request_id and match it up when it comes back from
+        # tha hash table.n
         client_info_struct = create_client_info_msg(
             client_id=client_id, request_id=request_id)
 
         str_client_info = serialize_msg(client_info_struct)
         to_send = [str_client_info]
         to_send.extend(msg)
-
-        self.backend.send(to_send)
+        self.to_app.put(to_send)
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -289,18 +301,46 @@ class Server(ZMQBaseComponent):
         :type msg: list
         """
         print "<SERVER> Received_from_App: ", msg
-        connection_id, msg = msg
-        self.backend.set_connection_id(connection_id)
+        connection_id, msg = msg[0], msg[1:]
 
+        if len(msg) == 1:
+            # Probably a PING message.
+            iden_struct = deserialize_msg("Identifier", msg[0])
+            if iden_struct.type == MSG_TYPE_PING:
+                self.backend.set_connection_id(connection_id)
+        elif len(msg) == 2:
+            str_client_info, update_str = msg
+            client_info_struct = deserialize_msg("ClientInfo", str_client_info)
+            to_send = [client_info_struct.client_id,
+                       client_info_struct.request_id, "", update_str]
 
-    ########################### End of callbacks. #############################
+            self.to_client.put(to_send)
+
+    def check_to_app(self):
+        # Check to see if Application Tier is online.
+        if not self.get_connection_id():
+            return
+        while not self.to_app.empty():
+            data = self.to_app.get()
+            self.backend.send(data)
+
+    def check_to_client(self):
+        # TODO: Check to see if the particulat client is online. Else
+        # move to next data in Queue. However, might have to implement
+        # a custom queue for this ourselves.
+        while not self.to_client.empty():
+            data = self.to_client.get()
+            self.frontend.send(data)
+
+    ###################### End of callbacks. #########################
 
     def stop(self):
         """
         Method to stop the server and make a clean exit.
         """
         # TODO: First complete any pending tasks in self.dataset and
-        # send "TERM" signal to connected components.
+        # send "TERM" signal to connected components. On receiving a
+        # "TERM", components must stop sending.
 
         # First Disconnect Clients then Application.
         self._loop.stop()
@@ -310,148 +350,6 @@ class Server(ZMQBaseComponent):
         self._context.destroy()
         self.frontend = None
         self._context = None
-        self.dataset = []
-
-
-############## Start of Application logic server side utilities. ##############
-
-def identify_msg(iden_struct):
-    """
-    Identifies the type of message packed in Identifier message structure and
-    routes to the specific handler.
-    :param iden_struct: Identifier message structure.
-    :type iden_struct: zmq_transport.common.message_pb2.Identifier
-    """
-    if iden_struct.type == MSG_TYPE_PING:
-        return handle_ping(iden_struct.ping)
-    elif iden_struct.type == MSG_TYPE_SYNC_TYPE:
-        return handle_sync_type(iden_struct.sync_type)
-    elif iden_struct.type == MSG_TYPE_ZMQ_VERB:
-        return handle_zmq_verb(iden_struct.zmq_verb)
-    elif iden_struct.type == MSG_TYPE_GET_SYNC_INFO_REQUEST:
-        return handle_get_sync_info_request(iden_struct.subscribe_request)
-    elif iden_struct.type == MSG_TYPE_SEND_DOCUMENT_REQUEST:
-        return handle_send_doc_request(iden_struct.send_document_request)
-    elif iden_struct.type == MSG_TYPE_ALL_SENT_REQUEST:
-        return handle_all_sent_request(iden_struct.all_sent_request)
-    elif iden_struct.type == MSG_TYPE_GET_DOCUMENT_REQUEST:
-        return handle_get_doc_request(iden_struct.get_document_request)
-    elif iden_struct.type == MSG_TYPE_PUT_SYNC_INFO_REQUEST:
-        return handle_put_sync_info_request(iden_struct.put_sync_info_request)
-
-
-def handle_sync_type(sync_type_struct):
-    pass
-
-
-def handle_zmq_verb(zmq_verb_struct):
-    pass
-
-
-def handle_get_sync_info_request(get_sync_info_struct):
-    """
-    Returns a GetSyncInfoResponse message.
-
-    :return: GetSyncInfoResponse message wrapped in an Identifier message.
-    :rtype: zmq_transport.common.message_pb2.Identifier
-    """
-    target_info = get_target_info()
-    source_info = get_source_info()
-
-    kwargs = {}
-    for key, value in target_info.items():
-        kwargs[key] = value
-
-    for key, value in source_info.items():
-        kwargs[key] = value
-
-    get_sync_info_struct = create_get_sync_info_response_msg(**kwargs)
-    return proto.Identifier(type=proto.Identifier.GET_SYNC_INFO_RESPONSE,
-                            get_sync_info_response=get_sync_info_struct)
-
-
-def handle_send_doc_request(send_doc_req_struct):
-    """
-    Attempts to insert a document into the database and returns the status of
-    the operation.
-
-    :return: PutSyncInfoResponse message wrapped in an Identifier message.
-    :type: zmq_transport.common.message_pb2.Identifier
-    """
-    # TODO: Some DB operation.
-    # status = insert_doc()
-    status = True
-    send_doc_resp_struct = create_send_document_response_msg(
-        source_transaction_id=send_doc_req_struct.source_transaction_id,
-        inserted=status)
-    return proto.Identifier(type=proto.Identifier.SEND_DOCUMENT_RESPONSE,
-                            send_document_response=send_doc_resp_struct)
-
-
-def handle_all_sent_request(all_sent_req_struct):
-    """
-    Returns an AllSentResponse message.
-
-    :return: AllSentResponse message wrapped in an Identifier message.
-    :rtype: zmq_transport.common.message_pb2.Identifier
-    """
-    def get_docs_to_send():
-        """
-        Returns a list of document id and generations that needs to be sent to
-        the source.
-
-        TODO: Implement functionality to return docs. Arbit for now.
-        """
-        return [("D1", 2), ("D2", 6), ("D3", 13), ("D4", 9)]
-
-    # TODO: First check if the last doc has been successfully
-    # inserted. Or else wait. or timeout maybe? or send some error
-    # signal to source ?
-
-    target_info = get_target_info()
-    docs_to_send = get_docs_to_send()
-    all_sent_resp_struct = create_all_sent_response_msg(
-        items=docs_to_send,
-        target_generation=target_info["target_replica_generation"],
-        target_trans_id=target_info["target_replica_trans_id"]
-    )
-    return proto.Identifier(type=proto.Identifier.ALL_SENT_RESPONSE,
-                            all_sent_response=all_sent_resp_struct)
-
-
-def handle_get_doc_request(get_doc_req_struct):
-    """
-    Returns a requested document.
-
-    :return: GetDocumentResponse message wrapped in an Identifier message.
-    :rtype: zmq_transport.common.message_pb2.Identifier
-    """
-    # TODO: Fetch doc from db.
-    doc_id, doc_rev, doc_generation, doc_content = get_doc_info()
-    target_generation = 25
-    target_trans_id = "TARGET-ID"
-    get_doc_resp_struct = create_get_document_response_msg(
-        doc_id=doc_id, doc_rev=doc_rev,  doc_generation=doc_generation,
-        doc_content=doc_content, target_generation=target_generation,
-        target_trans_id=target_trans_id)
-    return proto.Identifier(type=proto.Identifier.GET_DOCUMENT_RESPONSE,
-                            get_document_response=get_doc_resp_struct)
-
-
-def handle_put_sync_info_request(put_sync_info_struct):
-    """
-    Returns a PutSyncInfoResponse message.
-
-    :return: PutSyncInfoResponse message wrapped in an Identifier message.
-    :rtype: zmq_transport.common.message_pb2.Identifier
-    """
-    # TODO: Do some db transaction here.
-    inserted = True
-    response_struct = create_put_sync_info_response_msg(
-        source_transaction_id=put_sync_info_struct.source_transaction_id,
-        inserted=inserted)
-    return proto.Identifier(type=proto.Identifier.PUT_SYNC_INFO_RESPONSE,
-                            put_sync_info_response=response_struct)
-
-############### End of Application logic server side utilities. ###############
+        self.to_app = None
+        self.to_client = None
 
