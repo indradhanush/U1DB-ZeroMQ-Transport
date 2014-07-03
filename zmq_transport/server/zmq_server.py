@@ -1,9 +1,6 @@
 """
 ZeroMQ Server.
 """
-# System imports
-from Queue import Queue
-
 # ZeroMQ Imports
 import zmq
 from zmq.eventloop.zmqstream import ZMQStream
@@ -200,8 +197,6 @@ class Server(ZMQBaseComponent):
         self.frontend = ClientHandler(endpoint_frontend, self._context)
         self.backend = ApplicationHandler(endpoint_backend, self._context)
         self.publisher = Publisher(endpoint_publisher, self._context)
-        self.to_app = Queue()
-        self.to_client = Queue()
 
     def _prepare_reactor(self):
         """
@@ -219,18 +214,12 @@ class Server(ZMQBaseComponent):
         self.backend.register_handler("on_send", self.handle_snd_update_app)
         self.backend.register_handler("on_recv", self.handle_rcv_update_app)
 
-        self.check_to_app_callback = PeriodicCallback(self.check_to_app, 1000)
-        self.check_to_client_callback = PeriodicCallback(self.check_to_client,
-                                                         1000)
-
     def start(self):
         """
         Method to start the server.
         """
         # Start Router frontend, backend and Publisher instances.
         self._prepare_reactor()
-        self.check_to_app_callback.start()
-        self.check_to_client_callback.start()
         self.frontend.run()
         self.backend.run()
         self.publisher.run()
@@ -280,7 +269,7 @@ class Server(ZMQBaseComponent):
         str_client_info = serialize_msg(client_info_struct)
         to_send = [str_client_info]
         to_send.extend(msg)
-        self.to_app.put(to_send)
+        self.backend.send(to_send)
 
     def handle_snd_update_app(self, msg, status):
         """
@@ -314,23 +303,23 @@ class Server(ZMQBaseComponent):
             to_send = [client_info_struct.client_id,
                        client_info_struct.request_id, "", update_str]
 
-            self.to_client.put(to_send)
+            self.frontend.send(to_send)
 
-    def check_to_app(self):
-        # Check to see if Application Tier is online.
-        if not self.get_connection_id():
-            return
-        while not self.to_app.empty():
-            data = self.to_app.get()
-            self.backend.send(data)
+    # def check_to_app(self):
+    #     # Check to see if Application Tier is online.
+    #     if not self.backend.get_connection_id():
+    #         return
+    #     while not self.to_app.empty():
+    #         data = self.to_app.get()
+    #         self.backend.send(data)
 
-    def check_to_client(self):
-        # TODO: Check to see if the particulat client is online. Else
-        # move to next data in Queue. However, might have to implement
-        # a custom queue for this ourselves.
-        while not self.to_client.empty():
-            data = self.to_client.get()
-            self.frontend.send(data)
+    # def check_to_client(self):
+    #     # TODO: Check to see if the particulat client is online. Else
+    #     # move to next data in Queue. However, might have to implement
+    #     # a custom queue for this ourselves.
+    #     while not self.to_client.empty():
+    #         data = self.to_client.get()
+    #         self.frontend.send(data)
 
     ###################### End of callbacks. #########################
 
@@ -350,6 +339,4 @@ class Server(ZMQBaseComponent):
         self._context.destroy()
         self.frontend = None
         self._context = None
-        self.to_app = None
-        self.to_client = None
 

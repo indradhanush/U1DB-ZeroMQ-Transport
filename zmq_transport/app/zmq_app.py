@@ -1,5 +1,6 @@
-# System Imports
-from Queue import Queue
+"""
+Application/Tier 1 Implementation
+"""
 
 # ZeroMQ Imports
 import zmq
@@ -102,7 +103,6 @@ class ZMQApp(ZMQBaseComponent):
         self.state = state
         self.server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
                                             self._context)
-        self.dataset = Queue()
 
     def _prepare_reactor(self):
         """
@@ -113,7 +113,7 @@ class ZMQApp(ZMQBaseComponent):
         self.server_handler.wrap_zmqstream()
         self.server_handler.register_handler("on_send", self.handle_snd_update)
         self.server_handler.register_handler("on_recv", self.handle_rcv_update)
-        self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
+        # self.check_updates_callback = PeriodicCallback(self.check_updates, 1000)
 
     def _ping(self):
         """
@@ -131,7 +131,7 @@ class ZMQApp(ZMQBaseComponent):
         """
         self._prepare_reactor()
         self.server_handler.run()
-        self.check_updates_callback.start()
+        # self.check_updates_callback.start()
         self._ping()
 
         try:
@@ -193,15 +193,15 @@ class ZMQApp(ZMQBaseComponent):
                     return
                 else:
                     to_send = [str_client_info, response]
-                    self.dataset.put(to_send)
+                    self.server_handler.send(to_send)
 
-    def check_updates(self):
-        """
-        Method to regularly check new updates in self.dataset
-        """
-        while not self.dataset.empty():
-            data = self.dataset.get()
-            self.server_handler.send(data)
+    # def check_updates(self):
+    #     """
+    #     Method to regularly check new updates in self.dataset
+    #     """
+    #     while not self.dataset.empty():
+    #         data = self.dataset.get()
+    #         self.server_handler.send(data)
 
     ####################### End of callbacks. #########################
 
@@ -350,5 +350,4 @@ class ZMQApp(ZMQBaseComponent):
         self._context.destroy()
         self.server_handler = None
         self._context = None
-        self.dataset = []
 
