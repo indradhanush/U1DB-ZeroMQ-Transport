@@ -14,6 +14,11 @@ from google.protobuf.message import DecodeError
 from zmq_transport.config.settings import ENDPOINT_APPLICATION_HANDLER
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
+from zmq_transport.u1db import (
+    sync,
+    server_state,
+    Document
+)
 from zmq_transport.common.utils import (
     serialize_msg,
     deserialize_msg,
@@ -23,12 +28,7 @@ from zmq_transport.common.utils import (
     create_send_document_response_msg,
     create_all_sent_response_msg,
     create_get_document_response_msg,
-    create_put_sync_info_response_msg,
-
-    get_target_info,
-    get_source_info,
-    get_doc_info
-
+    create_put_sync_info_response_msg
 )
 from zmq_transport.config.protobuf_settings import (
     MSG_TYPE_GET_SYNC_INFO_REQUEST,
@@ -37,6 +37,133 @@ from zmq_transport.config.protobuf_settings import (
     MSG_TYPE_GET_DOCUMENT_REQUEST,
     MSG_TYPE_PUT_SYNC_INFO_REQUEST
 )
+
+
+class SyncResource(object):
+    """
+    Sync endpoint resource
+
+    Not really an endpoint in the zmq implementation. Maintaining
+    similar names for easier follow up.
+    """
+
+    sync_exchange_class = sync.SyncExchange
+
+    def __init__(self, dbname, source_replica_uid, state):
+        """
+        Initiallizes an object of type SyncResource.
+
+        :param dbname: Name of the database
+        :type: str
+        :param sournce_replica_uid: The replica id of the source
+                                   initiating the sync.
+        :type: str
+        :param state: A ServerState object
+        :type: zmq_transport.u1db.server_state.ServerState
+        """
+        self.dbname = dbname
+        self.source_replica_uid = source_replica_uid
+        self.state = state
+        self.replica_uid = None
+
+    def get_target(self):
+        return self.state.open_database(self.dbname).get_sync_target()
+
+    def get(self):
+        """
+        Application Logic handler when the source invokes
+        get_sync_info() on its end.
+        """
+        sync_target = self.get_target()
+        result = sync_target.get_sync_info(self.source_replica_uid)
+        return {
+            TARGET_REPLICA_UID_KEY: result[0],
+            TARGET_REPLICA_TRANS_ID_KEY: result[1],
+            SOURCE_REPLICA_UID_KEY: result[2],
+            SOURCE_LAST_KNOWN_GEN_KEY: result[3],
+            SOURCE_LAST_KNOWN_TRANS_ID: result[4]
+        }
+
+    def put(self, generation, transaction_id):
+        """
+        Application logic handler when the source invokes
+        record_sync_info() on its end.
+        """
+        sync_target = self.get_target()
+        sync_target.record_sync_info(self.source_replica_uid,
+                                     generation,
+                                     transaction_id)
+        return True
+
+    def instantiate_requirements(self, last_known_generation,
+                                 last_known_trans_id, ensure=False):
+        """
+        Instantiates parameters necessary for sync_exchange to take
+        place.
+        Analogous to http_app.SyncResource.post_args
+
+        :param last_known_generation: The last known generation of
+                                      source replica.
+        :type last_known_generation: str
+        :param last_known_trans_id: The last known transaction id of
+                                    source replica.
+        :type last_known_trans_id: str
+        :param ensure: Flag to indicate that database needs to be created.
+        :type ensure: bool
+        """
+        if ensure:
+            db, self.replica_uid = self.state.ensure_database(self.dbname)
+        else:
+            db = self.state.open_database(self.dbname)
+        db.validate_gen_and_trans_id(last_known_generation,
+                                     last_known_trans_id)
+        self.sync_exch = self.sync_exchange_class(db, self.source_replica_uid,
+                                                  last_known_generation)
+
+    def insert_doc(self, id, rev, content, gen, trans_id):
+        """
+        Applciation logic handler to insert a document into the target
+        sent from source. Invoked when send_doc_info is invoked on the
+        source.
+        Analogous to http_app.SyncResource.post_stream_entry()
+
+        :param id: Document ID.
+        :type id: str
+        :param rev: Document revision.
+        :type rev: str
+        :param content: Document content
+        :type content: str
+        :param gen: Db generation.
+        :type gen: int
+        :param trans_id: Transaction ID.
+        :type trans_id: str
+        """
+        doc = Document(id, rev, content)
+        self.sync_exch.insert_doc_from_source(doc, gen, trans_id)
+
+    def return_changed_docs(self):
+        """
+        Application logic handler to return docs changed at target to
+        psource.
+        Analogous to http_app.SyncResource.post_end()
+
+        :return: A tuple containing the docs by generation, the updated
+                 target generation and the transaction id.
+        :rtype: tuple
+        """
+        new_gen = self.sync_exch.find_changes_to_return()
+        new_trans_id = self.sync_exch.new_trans_id
+        changed_doc_ids = [doc_id for doc_id, _, _ in
+                           self.sync_exch.changes_to_return]
+        docs = self.sync_exch._db.get_doce(
+            changed_doc_ids, check_for_conflicts=False, include_deleted=True)
+
+        docs_by_gen = zip(
+            docs,
+            (gen for _, gen, _ in self.sync_exch.changes_to_return),
+            (trans_id for _, _, trans_id in self.sync_exch.changes_to_return)
+        )
+        return (docs_by_gen, new_gen, new_trans_id)
 
 
 class ZMQAppSocket(ZMQBaseSocket):
@@ -139,6 +266,25 @@ class ZMQApp(ZMQBaseComponent):
         except KeyboardInterrupt:
             print "<APPLICATION> Interrupted."
 
+
+    def _prepare_u1db_action(self, dbname, source_replica_uid):
+        """
+        Helper function to set up instances of server_state.ServerState
+        and zmq_app.SyncResource necessary for completing application logic
+        for each request.
+
+        :param dbname: Name of the database
+        :type: str
+        :param source_replica_uid: The replica id of the source
+                                   initiating the sync.
+        :type: str
+
+        :return: A SyncResource instance
+        :rtype: zmq_transport.u1db.zmq_app.SyncResource
+        """
+        state = server_state.ServerState()
+        return SyncResource(dbname, source_replica_uid, state)
+
     ###################### Start of callbacks. ########################
 
     def handle_snd_update(self, msg, status):
@@ -186,14 +332,28 @@ class ZMQApp(ZMQBaseComponent):
             response = self.identify_msg(iden_struct)
 
             if response:
-                try:
-                    response = serialize_msg(response)
-                except DecodeError:
-                    # Silently fail for now.
-                    return
+                # TODO: Maybe will force message handlers to send
+                # response packed in a list for generalization here.
+                # Needs to be discussed.
+                if type(response) == list:
+                    for r in response:
+                        try:
+                            r = serialize_msg(response)
+                        except DecodeError:
+                            # Silently fail for now.
+                            return
+                        else:
+                            to_send = [str_client_info, r]
+                            self.server_handler.send(to_send)
                 else:
-                    to_send = [str_client_info, response]
-                    self.server_handler.send(to_send)
+                    try:
+                        response = serialize_msg(response)
+                    except DecodeError:
+                        # Silently fail for now.
+                        return
+                    else:
+                        to_send = [str_client_info, response]
+                        self.server_handler.send(to_send)
 
     # def check_updates(self):
     #     """
@@ -237,15 +397,10 @@ class ZMQApp(ZMQBaseComponent):
         :return: GetSyncInfoResponse message wrapped in an Identifier message.
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
-        target_info = get_target_info()
-        source_info = get_source_info()
+        sync_resource = _prepare_u1db_action(
+            get_sync_info_struct.user_id, get_sync_info_struct.source_replica_uid)
 
-        kwargs = {}
-        for key, value in target_info.items():
-            kwargs[key] = value
-
-        for key, value in source_info.items():
-            kwargs[key] = value
+        kwargs = sync_resource.get()
 
         get_sync_info_struct = create_get_sync_info_response_msg(**kwargs)
         return proto.Identifier(type=proto.Identifier.GET_SYNC_INFO_RESPONSE,
@@ -256,12 +411,26 @@ class ZMQApp(ZMQBaseComponent):
         Attempts to insert a document into the database and returns the status
         of the operation.
 
-        :return: PutSyncInfoResponse message wrapped in an Identifier message.
+        :return: SendDocumentResponse message wrapped in an Identifier message.
         :type: zmq_transport.common.message_pb2.Identifier
         """
-        # TODO: Some DB operation.
-        # status = insert_doc()
-        status = True
+        sync_resource = _prepare_u1db_action(
+            send_doc_req_struct.user_id, send_doc_req_struct.source_replica_uid)
+        sync_resource.instantiate_requirements(
+            send_doc_req_struct.source_generation,
+            send_doc_req_struct.source_transaction_id)
+        try:
+            sync_resource.insert_doc(
+                send_doc_req_struct.doc_id, send_doc_req_struct.doc_rev,
+                send_doc_req_struct.doc_content,
+                send_doc_req_struct.doc_generation,
+                send_doc_req_struct.source_transaction_id)
+        except:
+            # If sync_exch.insert_doc_from_source raises an exception.
+            status = False
+        else:
+            status = True
+
         send_doc_resp_struct = create_send_document_response_msg(
             source_transaction_id=send_doc_req_struct.source_transaction_id,
             inserted=status)
@@ -278,46 +447,73 @@ class ZMQApp(ZMQBaseComponent):
         """
         def get_docs_to_send():
             """
-            Returns a list of document id and generations that needs to be sent
-            to the source.
+            Finds the documents changed at target.
 
-            TODO: Implement functionality to return docs. Arbit for now.
+            :return: A tuple containing a list of document id and
+                     generations that needs to be sent to the source,
+                     the updated target generation and the target
+                     transaction id.
+            :rtype: tuple
             """
-            return [("D1", 2), ("D2", 6), ("D3", 13), ("D4", 9)]
+            sync_resource = _prepare_u1db_action(
+                all_sent_req_struct.user_id,
+                all_sent_req_struct.source_replica_uid)
+
+            sync_resource.instantiate_requirements(
+                all_sent_req_struct.target_last_known_generation,
+                all_sent_req_struct.target_last_known_trans_id)
+
+            new_gen = sync_resource.sync_exch.find_changes_to_return()
+            new_trans_id = sync_resource.sync_exch.new_trans_id
+            docs_to_send = zip((doc_id for doc_id, _, _ in
+                                sync_resource.sync_exch.changes_to_return),
+                               (gen for _, gen, _ in
+                                sync_resource.sync_exch.changes_to_return))
+            return (docs_to_send, new_gen, new_trans_id)
 
         # TODO: First check if the last doc has been successfully
         # inserted. Or else wait. or timeout maybe? or send some error
         # signal to source ?
+        # On Second thoughts this may not be required. Needs discussion.
 
-        target_info = get_target_info()
-        docs_to_send = get_docs_to_send()
+        docs_to_send, new_gen, new_trans_id = get_docs_to_send()
         all_sent_resp_struct = create_all_sent_response_msg(
             items=docs_to_send,
-            target_generation=target_info["target_replica_generation"],
-            target_trans_id=target_info["target_replica_trans_id"]
-        )
+            target_generation=new_gen, target_trans_id=new_trans_id)
+
         return proto.Identifier(type=proto.Identifier.ALL_SENT_RESPONSE,
                                 all_sent_response=all_sent_resp_struct)
 
-
     def handle_get_doc_request(self, get_doc_req_struct):
         """
-        Returns a requested document.
+        Returns a list of documents changed at target.
 
-        :return: GetDocumentResponse message wrapped in an Identifier message.
-        :rtype: zmq_transport.common.message_pb2.Identifier
+        :return: A List of GetDocumentResponse message wrapped in an
+                 Identifier message.
+        :rtype: list
         """
-        # TODO: Fetch doc from db.
-        doc_id, doc_rev, doc_generation, doc_content = get_doc_info()
-        target_generation = 25
-        target_trans_id = "TARGET-ID"
-        get_doc_resp_struct = create_get_document_response_msg(
-            doc_id=doc_id, doc_rev=doc_rev,  doc_generation=doc_generation,
-            doc_content=doc_content, target_generation=target_generation,
-            target_trans_id=target_trans_id)
-        return proto.Identifier(type=proto.Identifier.GET_DOCUMENT_RESPONSE,
-                                get_document_response=get_doc_resp_struct)
+        sync_resource = _prepare_u1db_action(
+            get_doc_req_struct.user_id,
+            get_doc_req_struct.source_replica_uid)
 
+        sync_resource.instantiate_requirements(
+            get_doc_req_struct.target_last_known_genberation,
+            get_doc_req_struct.target_last_known_trans_id)
+
+        docs_by_gen, new_gen, new_trans_id = sync_resource.return_changed_docs()
+
+        doc_structs = []
+        for doc in docs_by_gen:
+            get_doc_resp_struct = create_get_document_response_msg(
+                doc_id=doc.doc_id, doc_rev=doc.doc_rev,
+                doc_generation=doc.doc_generation, doc_content=doc.doc_content,
+                target_generation=new_gen, target_trans_id=new_trans_id)
+            iden_struct = proto.Identifier(
+                type=proto.Identifier.GET_DOCUMENT_RESPONSE,
+                get_document_response=get_doc_resp_struct)
+            doc_structs.append(iden_struct)
+
+        return doc_structs
 
     def handle_put_sync_info_request(self, put_sync_info_struct):
         """
@@ -327,7 +523,15 @@ class ZMQApp(ZMQBaseComponent):
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
         # TODO: Do some db transaction here.
-        inserted = True
+
+        state = server_state.ServerState()
+        sync_resource = SyncResource(self.dbname,
+                                     put_sync_info_struct.source_replica_uid,
+                                     state)
+        inserted = sync_resource.put(
+            put_sync_info_struct.source_replica_generation,
+            put_sync_info_struct.source_transaction_id)
+
         response_struct = create_put_sync_info_response_msg(
             source_transaction_id=put_sync_info_struct.source_transaction_id,
             inserted=inserted)
@@ -350,4 +554,8 @@ class ZMQApp(ZMQBaseComponent):
         self._context.destroy()
         self.server_handler = None
         self._context = None
+
+
+
+
 

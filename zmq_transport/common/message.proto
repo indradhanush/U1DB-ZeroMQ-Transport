@@ -52,8 +52,9 @@ message ZMQVerb {
 
 // A GetSyncInfoRequest message tells the target about its current sync state.
 message GetSyncInfoRequest {
-    required string source_replica_uid = 1;
-    required string sync_id = 2;
+    required string user_id = 1;
+    required string source_replica_uid = 2;
+    required string sync_id = 3;
 }
 
 
@@ -74,17 +75,22 @@ message GetSyncInfoResponse {
 
 // A SendDocumentRequest message contains a document to be synced.
 message SendDocumentRequest {
-    required string source_replica_uid = 1;
-    required string sync_id = 2;
+    required string user_id = 1;
+    required string source_replica_uid = 2;
+    required string sync_id = 3;
 
     // Document information.
-    required string doc_id = 3;
-    required int32 doc_generation = 4;
-    required string doc_content = 5;
+    required string doc_id = 4;
+    required int32 doc_generation = 5;
+    required string doc_content = 6;
 
     // Source replica transaction log for the above document.
-    required int32 source_generation = 6;
-    required string source_transaction_id = 7;
+    required int32 source_generation = 7;
+    required string source_transaction_id = 8;
+
+    // Target information present at source.
+    required int32 target_last_known_generation = 9;
+    required string target_last_known_trans_id = 10;
 }
 
 
@@ -106,8 +112,14 @@ message DocInfo {
 // An AllSentRequest message is used to indicate that all the documents have
 // been send. It acts like a PING request.
 message AllSentRequest {
-    required int32 total_docs_sent = 1;
-    required bool all_sent = 2;
+    required string user_id = 1;
+    required string source_replica_uid = 2;
+    required int32 total_docs_sent = 3;
+    required bool all_sent = 4;
+
+    // Target information present at source.
+    required int32 target_last_known_generation = 6;
+    required string target_last_known_trans_id = 7;
 }
 
 
@@ -123,9 +135,14 @@ message AllSentResponse {
 // A GetDocumentRequest message is sent from source to get the documents that
 // were changed in the target since their last sync.
 message GetDocumentRequest {
-    required string source_replica_uid = 1;
-    required string sync_id = 2;
-    required int32  docs_received_count = 3;
+    required string user_id = 1;
+    required string source_replica_uid = 2;
+    required string sync_id = 3;
+    required int32  docs_received_count = 4;
+
+    // Target information present at source.
+    required int32 target_last_known_generation = 5;
+    required string target_last_known_trans_id = 6;
 }
 
 
@@ -147,10 +164,15 @@ message GetDocumentResponse {
 // A PutSyncInfoRequest message is used to record the current sync state of the
 // source with the target.
 message PutSyncInfoRequest {
-    required string sync_id = 1;
-    required string source_replica_uid = 2;
-    required int32 source_replica_generation = 3;
-    required string source_transaction_id = 4;
+    required string user_id = 1;
+    required string sync_id = 2;
+    required string source_replica_uid = 3;
+    required int32 source_replica_generation = 4;
+    required string source_transaction_id = 5;
+
+    // Target information present at source.
+    required int32 target_last_known_generation = 6;
+    required string target_last_known_trans_id = 7;
 }
 
 

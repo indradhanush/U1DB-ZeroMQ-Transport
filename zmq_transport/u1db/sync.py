@@ -17,8 +17,8 @@
 """The synchronization utilities for U1DB."""
 from itertools import izip
 
-import u1db
-from u1db import errors
+from zmq_transport import u1db
+from zmq_transport.u1db import errors
 
 
 class Synchronizer(object):
