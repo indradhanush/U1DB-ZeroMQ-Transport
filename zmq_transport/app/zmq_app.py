@@ -14,6 +14,10 @@ from google.protobuf.message import DecodeError
 from zmq_transport.config.settings import ENDPOINT_APPLICATION_HANDLER
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
+from zmq_transport.u1db import (
+    sync,
+    server_state
+)
 from zmq_transport.common.utils import (
     serialize_msg,
     deserialize_msg,
@@ -38,6 +42,53 @@ from zmq_transport.config.protobuf_settings import (
     MSG_TYPE_PUT_SYNC_INFO_REQUEST
 )
 
+
+class SyncResource(object):
+    """
+    Sync endpoint resource
+
+    Not really an endpoint in the zmq implementation. Maintaining
+    similar names for easier follow up.
+    """
+
+    sync_exchange_class = sync.SyncExchange
+
+    def __init__(self, dbname, source_replica_uid, state):
+        """
+        Initiallizes an object of type SyncResource.
+        :param dbname: Name of the database
+        :type: str
+        :param sournce_replica_uid: The replica id of the source
+                                   initiating the sync.
+        :type: str
+        :param state: A ServerState object
+        :type: zmq_transport.u1db.server_state.ServerState
+        """
+        self.dbname = dbname
+        self.source_replica_uid = source_replica_uid
+        self.state = state
+        self.replica_uid = None
+
+    def get_target(self):
+        return self.state.open_database(self.dbname).get_sync_target()
+
+    def get(self):
+        sync_target = self.get_target()
+        result = sync_target.get_sync_info(self.source_replica_uid)
+        return {
+            TARGET_REPLICA_UID_KEY: result[0],
+            TARGET_REPLICA_TRANS_ID_KEY: result[1],
+            SOURCE_REPLICA_UID_KEY: result[2],
+            SOURCE_LAST_KNOWN_GEN_KEY: result[3],
+            SOURCE_LAST_KNOWN_TRANS_ID: result[4]
+        }
+
+    def put(self, generation, transaction_id):
+        sync_target = self.get_target()
+        sync_target.record_sync_info(self.source_replica_uid,
+                                     generation,
+                                     transaction_id)
+        return True
 
 class ZMQAppSocket(ZMQBaseSocket):
     """
@@ -237,15 +288,11 @@ class ZMQApp(ZMQBaseComponent):
         :return: GetSyncInfoResponse message wrapped in an Identifier message.
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
-        target_info = get_target_info()
-        source_info = get_source_info()
-
-        kwargs = {}
-        for key, value in target_info.items():
-            kwargs[key] = value
-
-        for key, value in source_info.items():
-            kwargs[key] = value
+        state = server_state.ServerState()
+        sync_resource = SyncResource(self.dbname,
+                                     get_sync_info_struct.source_replica_uid,
+                                     state)
+        kwargs = sync_resource.get()
 
         get_sync_info_struct = create_get_sync_info_response_msg(**kwargs)
         return proto.Identifier(type=proto.Identifier.GET_SYNC_INFO_RESPONSE,
@@ -327,7 +374,15 @@ class ZMQApp(ZMQBaseComponent):
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
         # TODO: Do some db transaction here.
-        inserted = True
+
+        state = server_state.ServerState()
+        sync_resource = SyncResource(self.dbname,
+                                     put_sync_info_struct.source_replica_uid,
+                                     state)
+        inserted = sync_resource.put(
+            put_sync_info_struct.source_replica_generation,
+            put_sync_info_struct.source_transaction_id)
+
         response_struct = create_put_sync_info_response_msg(
             source_transaction_id=put_sync_info_struct.source_transaction_id,
             inserted=inserted)
@@ -350,4 +405,8 @@ class ZMQApp(ZMQBaseComponent):
         self._context.destroy()
         self.server_handler = None
         self._context = None
+
+
+
+
 
