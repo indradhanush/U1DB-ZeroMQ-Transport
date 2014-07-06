@@ -3,11 +3,17 @@
 package zmq_transport.common;
 
 
-// A PingRequest message is used to find out if a server or a component is
+// A Ping message is used to find out if a server or a component is
 // alive.
-message PingRequest {
+message Ping {
 }
 
+
+// A ClientInfo message is used to send information about a particular request.
+message ClientInfo {
+    required bytes client_id = 1;
+    required bytes request_id = 2;
+}
 
 // A SubscribeRequest message is used to subscribe a zmq.SUB socket to a
 // particular message type from a zmq.PUB socket.
@@ -82,12 +88,37 @@ message SendDocumentRequest {
 }
 
 
-// A SendDocumentResponse message informs the source about a successful sync of an
-// individual document.
+// A SendDocumentResponse message informs the source about a successful sync
+// of an individual document.
 message SendDocumentResponse {
     required string source_transaction_id = 1;
     required bool inserted = 2;
 }
+
+
+// A DocInfo message contains the doc_id and the doc_generation of a particular
+// document.
+message DocInfo {
+    required string doc_id = 1;
+    required int32 doc_generation = 2;
+}
+
+// An AllSentRequest message is used to indicate that all the documents have
+// been send. It acts like a PING request.
+message AllSentRequest {
+    required int32 total_docs_sent = 1;
+    required bool all_sent = 2;
+}
+
+
+// An AllSentResponse message is used to send a list of documents that will be
+// sent shortly. It also acts like an ACK to an AllSenRequest message.
+message AllSentResponse {
+    required int32 target_generation = 1;
+    required string target_trans_id = 2;
+    repeated DocInfo doc_info = 3;
+}
+
 
 // A GetDocumentRequest message is sent from source to get the documents that
 // were changed in the target since their last sync.
@@ -134,33 +165,41 @@ message PutSyncInfoResponse {
 // sent and also contains the message itself.
 message Identifier {
     enum Type {
-        SUBSCRIBE_REQUEST = 1;
-        UNSUBSCRIBE_REQUEST = 2;
-        SYNC_TYPE = 3;
-        ZMQ_VERB = 4;
-        GET_SYNC_INFO_REQUEST = 5;
-        GET_SYNC_INFO_RESPONSE = 6;
-        SEND_DOCUMENT_REQUEST = 7;
-        SEND_DOCUMENT_RESPONSE = 8;
-        GET_DOCUMENT_REQUEST = 9;
-        GET_DOCUMENT_RESPONSE = 10;
-        PUT_SYNC_INFO_REQUEST = 11;
-        PUT_SYNC_INFO_RESPONSE = 12;
+        PING = 1;
+        SUBSCRIBE_REQUEST = 2;
+        UNSUBSCRIBE_REQUEST = 3;
+        SYNC_TYPE = 4;
+        ZMQ_VERB = 5;
+        GET_SYNC_INFO_REQUEST = 6;
+        GET_SYNC_INFO_RESPONSE = 7;
+        SEND_DOCUMENT_REQUEST = 8;
+        SEND_DOCUMENT_RESPONSE = 9;
+        DOC_INFO = 10;
+        ALL_SENT_REQUEST = 11;
+        ALL_SENT_RESPONSE = 12;
+        GET_DOCUMENT_REQUEST = 13;
+        GET_DOCUMENT_RESPONSE = 14;
+        PUT_SYNC_INFO_REQUEST = 15;
+        PUT_SYNC_INFO_RESPONSE = 16;
     }
 
     required Type type = 1;
 
-    optional SubscribeRequest subscribe_request = 2;
-    optional UnsubscribeRequest unsubscribe_request = 3;
-    optional SyncType sync_type = 4;
-    optional ZMQVerb zmq_verb = 5;
-    optional GetSyncInfoRequest get_sync_info_request = 6;
-    optional GetSyncInfoResponse get_sync_info_response= 7;
-    optional SendDocumentRequest send_document_request = 8;
-    optional SendDocumentResponse send_document_response = 9;
-    optional GetDocumentRequest get_document_request = 10;
-    optional GetDocumentResponse get_document_response = 11;
-    optional PutSyncInfoRequest put_sync_info_request = 12;
-    optional PutSyncInfoResponse put_sync_info_response = 13;
+    optional Ping ping = 2;
+    optional SubscribeRequest subscribe_request = 3;
+    optional UnsubscribeRequest unsubscribe_request = 4;
+    optional SyncType sync_type = 5;
+    optional ZMQVerb zmq_verb = 6;
+    optional GetSyncInfoRequest get_sync_info_request = 7;
+    optional GetSyncInfoResponse get_sync_info_response= 8;
+    optional SendDocumentRequest send_document_request = 9;
+    optional SendDocumentResponse send_document_response = 10;
+    optional DocInfo doc_info = 11;
+    optional AllSentRequest all_sent_request = 12;
+    optional AllSentResponse all_sent_response = 13;
+    optional GetDocumentRequest get_document_request = 14;
+    optional GetDocumentResponse get_document_response = 15;
+    optional PutSyncInfoRequest put_sync_info_request = 16;
+    optional PutSyncInfoResponse put_sync_info_response = 17;
 }
 

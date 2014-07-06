@@ -3,13 +3,23 @@ Common Utilities.
 """
 # System Imports
 import uuid
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 # Protobuf Imports
 from google.protobuf.message import DecodeError
 
 # Local Imports
 from zmq_transport.common import message_pb2 as proto
-
+from zmq_transport.config.u1db_settings import (
+    TARGET_REPLICA_UID_KEY,
+    TARGET_REPLICA_GEN_KEY,
+    TARGET_REPLICA_TRANS_ID_KEY,
+    SOURCE_LAST_KNOWN_GEN_KEY,
+    SOURCE_LAST_KNOWN_TRANS_ID
+)
 
 ######################## Start of Protobuf utilities. ########################
 
@@ -29,6 +39,33 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
     for key, value in kwargs.items():
         setattr(msg_struct, key, value)
     return msg_struct
+
+
+def create_ping_msg():
+    """
+    Creates a zmq_transport.common.message_pb2.Ping message
+    structure.
+
+    :return: Ping message.
+    :rtype: zmq_transport.common.message_pb2.Ping
+    """
+    return _create_protobuf_msg("Ping")
+
+
+def create_client_info_msg(**kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.ClientInfo message
+    structure.
+
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of ClientInfo message
+                   structure.
+    :type kwargs: dict
+
+    :return: ClientInfo message.
+    :rtype: zmq_transport.common.message_pb2.ClientInfo
+    """
+    return _create_protobuf_msg("ClientInfo", **kwargs)
 
 
 def create_subscribe_request_msg(**kwargs):
@@ -125,34 +162,90 @@ def create_get_sync_info_response_msg(**kwargs):
 
 def create_send_document_request_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.SyncDocumentRequest message
+    Creates a zmq_transport.common.message_pb2.SendDocumentRequest message
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-                   their respective values of SyncDocumentRequest message
+                   their respective values of SendDocumentRequest message
                    structure.
     :type kwargs: dict
 
-    :return: SyncDocumentRequest message.
-    :rtype: zmq_transport.common.message_pb2.SyncDocumentRequest
+    :return: SendDocumentRequest message.
+    :rtype: zmq_transport.common.message_pb2.SendDocumentRequest
     """
     return _create_protobuf_msg("SendDocumentRequest", **kwargs)
 
 
 def create_send_document_response_msg(**kwargs):
     """
-    Creates a zmq_transport.common.message_pb2.SyncDocumentResponse message
+    Creates a zmq_transport.common.message_pb2.SendDocumentResponse message
     structure.
 
     :param kwargs: A dictionary containing key value pairs of attributes and
-                   their respective values of SyncDocumentResponse message
+                   their respective values of SendDocumentResponse message
                    structure.
     :type kwargs: dict
 
-    :return: SyncDocumentResponse message.
-    :rtype: zmq_transport.common.message_pb2.SyncDocumentResponse
+    :return: SendDocumentResponse message.
+    :rtype: zmq_transport.common.message_pb2.SendDocumentResponse
     """
     return _create_protobuf_msg("SendDocumentResponse", **kwargs)
+
+
+def create_doc_info_msg(**kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.DocInfo message
+    structure.
+
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of DocInfo message
+                   structure.
+    :type kwargs: dict
+
+    :return: DocInfo message.
+    :rtype: zmq_transport.common.message_pb2.DocInfo
+    """
+    return _create_protobuf_msg("DocInfo", **kwargs)
+
+
+def create_all_sent_request_msg(**kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.AllSentRequest message
+    structure.
+
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of AllSentRequest message
+                   structure.
+    :type kwargs: dict
+
+    :return: AllSentRequest message.
+    :rtype: zmq_transport.common.message_pb2.AllSentRequest
+    """
+    return _create_protobuf_msg("AllSentRequest", **kwargs)
+
+
+def create_all_sent_response_msg(items=[], **kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.AllSentResponse message
+    structure.
+
+    :param items: A list of tuples of length 2.
+    :type items: list
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of AllSentResponse message
+                   structure.
+    :type kwargs: dict
+
+    :return: AllSentResponse message.
+    :rtype: zmq_transport.common.message_pb2.AllSentResponse
+    """
+    msg_struct = _create_protobuf_msg("AllSentResponse", **kwargs)
+    for item in items:
+        doc_info = msg_struct.doc_info.add()
+        doc_info.doc_id = item[0]
+        doc_info.doc_generation = item[1]
+
+    return msg_struct
 
 
 def create_get_document_request_msg(**kwargs):
@@ -290,9 +383,9 @@ def get_target_info():
     :rtype: dict
     """
     info = {}
-    info["target_replica_uid"] = str(uuid.uuid4())
-    info["target_replica_generation"] = 12
-    info["target_replica_trans_id"] = str(uuid.uuid4())
+    info[TARGET_REPLICA_UID_KEY] = str(uuid.uuid4())
+    info[TARGET_REPLICA_GEN_KEY] = 12
+    info[TARGET_REPLICA_TRANS_ID_KEY] = str(uuid.uuid4())
 
     return info
 
@@ -305,8 +398,8 @@ def get_source_info():
     :rtype: dict
     """
     info = {}
-    info["source_last_known_generation"] = 8
-    info["source_last_known_trans_id"] = str(uuid.uuid4())
+    info[SOURCE_LAST_KNOWN_GEN_KEY] = 8
+    info[SOURCE_LAST_KNOWN_TRANS_ID] = str(uuid.uuid4())
 
     return info
 
@@ -316,10 +409,11 @@ def get_doc_info():
     TODO: Should return information about a document. Arbit now.
     """
     doc_id = str(uuid.uuid4())
+    doc_rev = 5
     doc_generation = 18
-    doc_content = "Random garbled text for simulation."
-
-    return (doc_id, doc_generation, doc_content)
+    doc_content = {"data": "Random garbled text for simulation."}
+    doc_content = json.dumps(doc_content)
+    return (doc_id, doc_rev, doc_generation, doc_content)
 
 
 def get_source_replica_uid():

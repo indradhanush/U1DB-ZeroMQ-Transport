@@ -16,6 +16,39 @@ class BaseMessageTest(unittest.TestCase):
         self.msg_struct = None
 
 
+class PingTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_ping_msg()
+
+    def test_create_ping_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.Ping)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("Ping", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.Ping)
+        self.assertEqual(parsed_msg_struct, self.msg_struct)
+
+
+class ClientInfoTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_client_info_msg(client_id="C-ID",
+                                                 request_id="REQ-ID")
+
+    def test_create_client_info_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.ClientInfo)
+        self.assertEqual(self.msg_struct.client_id, "C-ID")
+        self.assertEqual(self.msg_struct.request_id, "REQ-ID")
+
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("ClientInfo", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.ClientInfo)
+        self.assertEqual(parsed_msg_struct.client_id, "C-ID")
+        self.assertEqual(parsed_msg_struct.request_id, "REQ-ID")
+
+
 class SubscribeRequestTest(BaseMessageTest):
 
     def setUp(self):
@@ -183,8 +216,73 @@ class SendDocumentResponseTest(BaseMessageTest):
         serialized_str = serialize_msg(self.msg_struct)
         parsed_msg_struct = deserialize_msg("SendDocumentResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.SendDocumentResponse)
-        self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
-        self.assertEqual(self.msg_struct.inserted, True)
+        self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
+        self.assertEqual(parsed_msg_struct.inserted, True)
+
+
+class DocInfoTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_doc_info_msg(doc_id="DOC-ID", doc_generation=2)
+
+    def test_create_doc_info_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.DocInfo)
+        self.assertEqual(self.msg_struct.doc_id, "DOC-ID")
+        self.assertEqual(self.msg_struct.doc_generation, 2)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("DocInfo", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.DocInfo)
+        self.assertEqual(parsed_msg_struct.doc_id, "DOC-ID")
+        self.assertEqual(parsed_msg_struct.doc_generation, 2)
+
+
+class AllSentRequestTest(BaseMessageTest):
+
+    def setUp(self):
+        self.msg_struct = create_all_sent_request_msg(total_docs_sent=4,
+                                                      all_sent=True)
+
+    def test_create_all_sent_request_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.AllSentRequest)
+        self.assertEqual(self.msg_struct.total_docs_sent, 4)
+        self.assertEqual(self.msg_struct.all_sent, True)
+        self.msg_struct.all_sent = False
+        self.assertEqual(self.msg_struct.all_sent, False)
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("AllSentRequest", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.AllSentRequest)
+        self.assertEqual(parsed_msg_struct.total_docs_sent, 4)
+        self.assertEqual(parsed_msg_struct.all_sent, True)
+
+
+class AllSentResponseTest(BaseMessageTest):
+
+    def setUp(self):
+        self.items = [("D1", 2), ("D2", 4), ("D3", 9), ("D4", 5)]
+        self.msg_struct = create_all_sent_response_msg(
+            items=self.items, target_generation=20, target_trans_id="TRANS-ID")
+
+    def test_create_all_sent_response_msg(self):
+        self.assertIsInstance(self.msg_struct, proto.AllSentResponse)
+        self.assertEqual(self.msg_struct.target_generation, 20)
+        self.assertEqual(self.msg_struct.target_trans_id, "TRANS-ID")
+        self.assertEqual(len(self.msg_struct.doc_info), len(self.items))
+        for i in range(len(self.items)):
+            self.assertEqual(self.msg_struct.doc_info[i].doc_id, self.items[i][0])
+            self.assertEqual(self.msg_struct.doc_info[i].doc_generation,
+                             self.items[i][1])
+
+    def test_serialize_msg(self):
+        serialized_str = serialize_msg(self.msg_struct)
+        parsed_msg_struct = deserialize_msg("AllSentResponse", serialized_str)
+        self.assertIsInstance(parsed_msg_struct, proto.AllSentResponse)
+        self.assertEqual(parsed_msg_struct.target_generation, 20)
+        self.assertEqual(parsed_msg_struct.target_trans_id, "TRANS-ID")
+        self.assertEqual(len(parsed_msg_struct.doc_info), len(self.items))
 
 
 class GetDocumentRequestTest(BaseMessageTest):
