@@ -83,12 +83,6 @@ class InvalidGeneration(U1DBError):
     wire_description = "invalid generation"
 
 
-class InvalidReplicaUID(U1DBError):
-    """Attempting to sync a database with itself."""
-
-    wire_description = "invalid replica uid"
-
-
 class ConflictedDoc(U1DBError):
     """The document is conflicted, you must call resolve before put()"""
 

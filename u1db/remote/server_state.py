@@ -31,10 +31,6 @@ class ServerState(object):
     def set_workingdir(self, path):
         self._workingdir = path
 
-    def global_info(self):
-        """Return global information about the server."""
-        return {}
-
     def _relpath(self, relpath):
         # Note: We don't want to allow absolute paths here, because we
         #       don't want to expose the filesystem. We should also check that

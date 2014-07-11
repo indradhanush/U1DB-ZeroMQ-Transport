@@ -81,16 +81,17 @@ message SendDocumentRequest {
 
     // Document information.
     required string doc_id = 4;
-    required int32 doc_generation = 5;
-    required string doc_content = 6;
+    required int32 doc_rev = 5;
+    required int32 doc_generation = 6;
+    required string doc_content = 7;
 
     // Source replica transaction log for the above document.
-    required int32 source_generation = 7;
-    required string source_transaction_id = 8;
+    required int32 source_generation = 8;
+    required string source_transaction_id = 9;
 
     // Target information present at source.
-    required int32 target_last_known_generation = 9;
-    required string target_last_known_trans_id = 10;
+    required int32 target_last_known_generation = 10;
+    required string target_last_known_trans_id = 11;
 }
 
 

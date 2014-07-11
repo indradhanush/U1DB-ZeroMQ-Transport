@@ -175,9 +175,9 @@ class SendDocumentRequestTest(BaseMessageTest):
     def setUp(self):
         self.msg_struct = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid="UID1", sync_id="SYNC1",
-            doc_id="DOC1", doc_generation=1, doc_content="Dummy text.",
-            source_generation=2, source_transaction_id="TRANS-ID",
-            target_last_known_generation=25,
+            doc_id="DOC1", doc_rev=20, doc_generation=1,
+            doc_content="Dummy text.", source_generation=2,
+            source_transaction_id="TRANS-ID", target_last_known_generation=25,
             target_last_known_trans_id="TAR-ID")
 
     def test_create_send_document_request_msg(self):
@@ -186,6 +186,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(self.msg_struct.source_replica_uid, "UID1")
         self.assertEqual(self.msg_struct.sync_id, "SYNC1")
         self.assertEqual(self.msg_struct.doc_id, "DOC1")
+        self.assertEqual(self.msg_struct.doc_rev, 20)
         self.assertEqual(self.msg_struct.doc_generation, 1)
         self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
         self.assertEqual(self.msg_struct.source_generation, 2)
@@ -201,6 +202,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
         self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
+        self.assertEqual(parsed_msg_struct.doc_rev, 20)
         self.assertEqual(parsed_msg_struct.doc_generation, 1)
         self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
         self.assertEqual(parsed_msg_struct.source_generation, 2)

@@ -30,7 +30,7 @@ from zmq_transport.common.utils import (
     get_source_replica_uid
 )
 
-from zmq_transport.u1db import (
+from u1db import (
     SyncTarget,
     Document
 )
@@ -396,7 +396,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 source_last_known_trans_id = sync_info_response
 
             # Simulating docs_by_generation
-            from zmq_transport.u1db import Document
+            from u1db import Document
             from uuid import uuid4
             docs_by_generation = []
             for i in range(1, 6):
