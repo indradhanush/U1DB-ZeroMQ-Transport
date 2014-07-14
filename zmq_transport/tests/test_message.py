@@ -175,7 +175,7 @@ class SendDocumentRequestTest(BaseMessageTest):
     def setUp(self):
         self.msg_struct = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid="UID1", sync_id="SYNC1",
-            doc_id="DOC1", doc_rev=20, doc_generation=1,
+            doc_id="DOC1", doc_rev="20", doc_generation=1,
             doc_content="Dummy text.", source_generation=2,
             source_transaction_id="TRANS-ID", target_last_known_generation=25,
             target_last_known_trans_id="TAR-ID")
@@ -186,7 +186,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(self.msg_struct.source_replica_uid, "UID1")
         self.assertEqual(self.msg_struct.sync_id, "SYNC1")
         self.assertEqual(self.msg_struct.doc_id, "DOC1")
-        self.assertEqual(self.msg_struct.doc_rev, 20)
+        self.assertEqual(self.msg_struct.doc_rev, "20")
         self.assertEqual(self.msg_struct.doc_generation, 1)
         self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
         self.assertEqual(self.msg_struct.source_generation, 2)
@@ -202,7 +202,7 @@ class SendDocumentRequestTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.source_replica_uid, "UID1")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
         self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
-        self.assertEqual(parsed_msg_struct.doc_rev, 20)
+        self.assertEqual(parsed_msg_struct.doc_rev, "20")
         self.assertEqual(parsed_msg_struct.doc_generation, 1)
         self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
         self.assertEqual(parsed_msg_struct.source_generation, 2)
@@ -343,13 +343,13 @@ class GetDocumentResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_get_document_response_msg(
-            doc_id="DOC1", doc_rev=2, doc_generation=1, doc_content="Dummy text.",
+            doc_id="DOC1", doc_rev="2", doc_generation=1, doc_content="Dummy text.",
             target_generation=2, target_trans_id="TAR-ID")
 
     def test_create_get_document_response_msg(self):
         self.assertIsInstance(self.msg_struct, proto.GetDocumentResponse)
         self.assertEqual(self.msg_struct.doc_id, "DOC1")
-        self.assertEqual(self.msg_struct.doc_rev, 2)
+        self.assertEqual(self.msg_struct.doc_rev, "2")
         self.assertEqual(self.msg_struct.doc_generation, 1)
         self.assertEqual(self.msg_struct.doc_content, "Dummy text.")
         self.assertEqual(self.msg_struct.target_generation, 2)
@@ -360,6 +360,7 @@ class GetDocumentResponseTest(BaseMessageTest):
         parsed_msg_struct = deserialize_msg("GetDocumentResponse", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.GetDocumentResponse)
         self.assertEqual(parsed_msg_struct.doc_id, "DOC1")
+        self.assertEqual(parsed_msg_struct.doc_rev, "2")
         self.assertEqual(parsed_msg_struct.doc_generation, 1)
         self.assertEqual(parsed_msg_struct.doc_content, "Dummy text.")
         self.assertEqual(parsed_msg_struct.target_generation, 2)

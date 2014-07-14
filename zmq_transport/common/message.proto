@@ -81,7 +81,7 @@ message SendDocumentRequest {
 
     // Document information.
     required string doc_id = 4;
-    required int32 doc_rev = 5;
+    required string doc_rev = 5;
     required int32 doc_generation = 6;
     required string doc_content = 7;
 
@@ -152,7 +152,7 @@ message GetDocumentResponse {
 
     // Document information.
     required string doc_id = 1;
-    required int32 doc_rev = 2;
+    required string doc_rev = 2;
     required int32 doc_generation = 3;
     required string doc_content = 4;
 

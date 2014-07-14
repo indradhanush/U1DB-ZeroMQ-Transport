@@ -1,6 +1,16 @@
+Paste>=1.7.5.1
+Routes>=2.0
 argparse>=1.2.1
 backports.ssl-match-hostname>=3.4.0.2
+dirspec>=13.10
 distribute>=0.6.24
+leap.soledad.common>=0.5.2-22-g4519775
+mock>=1.0.1
+oauth>=1.0.1
 protobuf>=2.5.0
-pyzmq>=14.1.1
+py>=1.4.20
+pyzmq>=14.3.1
+repoze.lru>=0.6
+simplejson>=3.5.3
+u1db>=13.09
 wsgiref>=0.1.2

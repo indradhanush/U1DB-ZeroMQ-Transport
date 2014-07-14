@@ -1,9 +1,14 @@
 """
 Project Settings
 """
+import os.path
+
+# Project Settings
+PROJECT_ROOT = os.path.abspath("{0}/../../../".format(__file__))
+DATABASE_ROOT = os.path.abspath("{0}/database/".format(PROJECT_ROOT))
+DATABASE_EXTENSION = ".u1db"
 
 # Server Settings
-
 SERVER_IP = "tcp://127.0.0.1"
 
 PORT_APPLICATION_HANDLER = "6665"
@@ -17,4 +22,3 @@ ENDPOINT_PUBLISHER = "%s:%s" % (SERVER_IP, PORT_PUBLISHER)
 # ZMQApp Settings
 PORT_SERVER_HANDLER = "6664"
 ENDPOINT_SERVER_HANDLER = "%s:%s" % (SERVER_IP, PORT_SERVER_HANDLER)
-

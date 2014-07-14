@@ -2,6 +2,7 @@
 SyncTarget API implementation to a remote ZMQ server.
 """
 # System Imports
+import sys
 try:
     import simplejson as json
 except ImportError:
@@ -13,6 +14,7 @@ from zmq.eventloop.ioloop import PeriodicCallback
 
 # Local Imports
 from zmq_transport.client.zmq_client import ZMQClientBase
+from zmq_transport.common.errors import UserIDNotSet
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import (
     serialize_msg,
@@ -55,7 +57,11 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             self.endpoints = endpoints
             self.sync_required = False
             self.sync_info = None
-            self.source_generation = self._get_source_generation()
+            self.user_id = None
+            # self.target_last_known_generation = None
+            # self.target_last_known_trans_id = None
+            self.source_current_gen = None
+            self.source_current_trans_id = None
         else:
             raise TypeError("Expected type(endpoints) list. Got %s" %
                             (type(endpoints)))
@@ -68,23 +74,55 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         raise NotImplementedError("Target uses zmq.Poller()")
 
+    def set_user_id(self, user_id):
+        """
+        Helper method to set the user_id.
+
+        :param user_id: The user_id of the current user.
+        :type user_id: str
+        """
+        self.user_id = user_id
+
+    def release_user_id(self):
+        """
+        Helper method to reset the user_id.
+
+        :param user_id: The user_id of the current user.
+        :type user_id: str
+        """
+        self.user_id = None
+
+    def check_user_id(self):
+        """
+        Checks if the user_id is set.
+        Raises zmq_transport.common.errors.UserIDNotSet exception.
+        """
+        if not self.user_id:
+            raise UserIDNotSet("User ID is None.")
+
     def start(self):
         """
         Overridden from zmq_transport.client.zmq_client.ZMQClientBase
         """
-        self.speaker.run()
-        poller = zmq.Poller()
-        poller.register(self.speaker._socket, zmq.POLLIN)
-        poller.register(self.updates._socket, zmq.POLLIN)
+        try:
+            self.check_user_id()
+        except UserIDNotSet, e:
+            print "Aborting:", e
+            sys.exit()
+        else:
+            self.speaker.run()
+        # poller = zmq.Poller()
+        # poller.register(self.speaker._socket, zmq.POLLIN)
+        # poller.register(self.updates._socket, zmq.POLLIN)
 
-        while True:
-            socks = dict(poller.poll(1000))
-            if socks.get(self.speaker._socket) == zmq.POLLIN:
-                pass
-            elif socks.get(self.updates._socket) == zmq.POLLIN:
-                pass
-            else:
-                self.check_new_sync()
+        # while True:
+        #     socks = dict(poller.poll(1000))
+        #     if socks.get(self.speaker._socket) == zmq.POLLIN:
+        #         pass
+        #     elif socks.get(self.updates._socket) == zmq.POLLIN:
+        #         pass
+        #     else:
+        #         self.check_new_sync()
 
     @staticmethod
     def connect(endpoints):
@@ -112,10 +150,13 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: Last time target was synced with source.
         :rtype: tuple
         """
+
+        print "Entering get_sync_info..."
         # Create GetSyncInfoRequest message.
         sync_id = get_sync_id()
         get_sync_info_struct = create_get_sync_info_request_msg(
-            source_replica_uid=source_replica_uid, sync_id=sync_id)
+            user_id=self.user_id, source_replica_uid=source_replica_uid,
+            sync_id=sync_id)
         iden_get_sync_info_struct = proto.Identifier(
             type=proto.Identifier.GET_SYNC_INFO_REQUEST,
             get_sync_info_request=get_sync_info_struct)
@@ -157,6 +198,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: source_transaction_id and inserted status.
         :rtype: tuple
         """
+        print "Entering record_sync_info..."
         # Create PutSyncInfoRequest message.
         sync_id = get_sync_id() # Might have to pass this as a param
         # too or might not be needed at all.
@@ -192,9 +234,10 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
     def _parse_sync_stream(self, data, return_doc_cb, ensure_callback=None):
         pass
 
-    def send_doc_info(self, source_replica_uid, sync_id, doc_id,
+    def send_doc_info(self, source_replica_uid, sync_id, doc_id, doc_rev,
                       doc_generation, doc_content, source_generation,
-                      source_transaction_id):
+                      source_transaction_id, target_last_known_generation,
+                      target_last_known_trans_id):
         """
         After "GetSyncInfoRequest" message has been sent and
         "GetSyncInfoResponse" is received, the source will now know which
@@ -221,12 +264,16 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: source_transaction_id and inserted status.
         :rtype: tuple
         """
+        print ">>>>>>>>", target_last_known_trans_id, target_last_known_generation
         # Create SendDocumentRequest message.
         send_doc_req_struct = create_send_document_request_msg(
-            source_replica_uid=source_replica_uid, sync_id=sync_id,
-            doc_id=doc_id, doc_generation=doc_generation,
-            doc_content=doc_content, source_generation=source_generation,
-            source_transaction_id=source_transaction_id)
+            user_id=self.user_id, source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc_id, doc_rev=doc_rev,
+            doc_generation=doc_generation, doc_content=doc_content,
+            source_generation=source_generation,
+            source_transaction_id=str(source_transaction_id),
+            target_last_known_generation=target_last_known_generation,
+            target_last_known_trans_id=str(target_last_known_trans_id))
         iden_send_doc_req = proto.Identifier(
             type=proto.Identifier.SEND_DOCUMENT_REQUEST,
             send_document_request=send_doc_req_struct)
@@ -254,7 +301,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         return (response.source_transaction_id, response.inserted)
 
     def get_doc_at_target(self, source_replica_uid, sync_id,
-                          docs_received_count):
+                          docs_received_count, target_last_known_generation,
+                          target_last_known_trans_id):
         """
         Sends a GetDocumentRequest to target to receive documents that were
         changed at the target replica.
@@ -271,8 +319,10 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         # Create GetDocumentRequest message.
         get_doc_req_struct = create_get_document_request_msg(
-            source_replica_uid=source_replica_uid, sync_id=sync_id,
-            docs_received_count=docs_received_count)
+            user_id=self.user_id, source_replica_uid=source_replica_uid,
+            sync_id=sync_id, docs_received_count=docs_received_count,
+            target_last_known_generation=target_last_known_generation,
+            target_last_known_trans_id=target_last_known_trans_id)
         iden_get_doc_req = proto.Identifier(
             type=proto.Identifier.GET_DOCUMENT_REQUEST,
             get_document_request=get_doc_req_struct)
@@ -329,13 +379,16 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: Latest transaction generation and id of target.
         :rtype: tuple
         """
+        print "Entering sync_exchange..."
         # Send docs changed at source.
         source_transaction_id = "TRANS-ID" # has to be unique.
         sync_id = get_sync_id()
         for doc, gen, trans_id in docs_by_generation:
             source_transaction_id, inserted = self.send_doc_info(
-                source_replica_uid, sync_id, doc.doc_id, gen, doc.get_json(),
-                self.source_generation, source_transaction_id)
+                source_replica_uid, sync_id, doc.doc_id, doc.rev, gen,
+                doc.get_json(), self.source_current_gen,
+                self.source_current_trans_id, last_known_generation,
+                last_known_trans_id)
             if not inserted:
                 # TODO: Maybe retry? or Report?
                 pass
@@ -343,12 +396,17 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         # Intermediate PING-ACK. Also gets notified about incoming
         # docs beforehand.
         all_sent_req_struct = create_all_sent_request_msg(
-            total_docs_sent=len(docs_by_generation), all_sent=True)
+            user_id=self.user_id, source_replica_uid=source_replica_uid,
+            total_docs_sent=len(docs_by_generation), all_sent=True,
+            target_last_known_generation=last_known_generation,
+            target_last_known_trans_id=last_known_trans_id)
         iden_all_sent_req = proto.Identifier(
             type=proto.Identifier.ALL_SENT_REQUEST,
             all_sent_request=all_sent_req_struct)
         str_iden_all_sent_req = serialize_msg(iden_all_sent_req)
 
+        import pdb
+        pdb.set_trace()
         # Frame 1: AllSentRequest
         self.speaker.send([str_iden_all_sent_req])
 
@@ -364,7 +422,9 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         docs_received = 0
         while docs_to_receive != 0:
             doc_recvd = self.get_doc_at_target(source_replica_uid, sync_id,
-                                               docs_received)
+                                               docs_received,
+                                               last_known_generation,
+                                               last_known_trans_id)
             if doc_recvd.get("doc_id"):
                 docs_received += 1
                 docs_to_receive -= 1
@@ -391,8 +451,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             # attribute of sync.
 
             # Unpacking response
-            target_replica_uid, target_replica_generation,\
-                target_replica_trans_id, source_last_known_generation,\
+            target_replica_uid, self.target_last_known_generation,\
+                self.target_last_known_trans_id, source_last_known_generation,\
                 source_last_known_trans_id = sync_info_response
 
             # Simulating docs_by_generation
@@ -430,3 +490,5 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
 
     ################### End of Application logic handlers. ####################
 
+    def close(self):
+        pass
