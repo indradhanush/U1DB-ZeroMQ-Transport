@@ -7,10 +7,14 @@ from threading import Lock
 # Dependencies' imports
 from u1db.errors import (
     DatabaseDoesNotExist,
-    InvalidReplicaUID
+    InvalidReplicaUID,
+    InvalidTransactionId
 )
 from leap.soledad.client.sync import SoledadSynchronizer as Synchronizer
 
+
+# Local Imports
+from zmq_transport.config.u1db_settings import TARGET_REPLICA_UID_KEY
 
 class ZMQSynchronizer(Synchronizer):
     """
@@ -26,13 +30,17 @@ class ZMQSynchronizer(Synchronizer):
         ensure_callback = None
         source_replica_uid = self.source._replica_uid
 
+        print "Get Sync Info..."
         # get_sync_info
+        # source_last_known_generation is the last generation of the
+        # source that the target knows of. Similarly for
+        # source_last_known_trans_id
         try:
             (self.target_replica_uid, target_latest_generation,
-             target_latest_trans_id, source_last_known_generation,
+             target_latest_trans_id,
+             source_last_known_generation,
              source_last_known_trans_id) =\
                  sync_target.get_sync_info(source_replica_uid)
-            print source_last_known_trans_id
         except DatabaseDoesNotExist:
             if not autocreate:
                 raise
@@ -40,7 +48,7 @@ class ZMQSynchronizer(Synchronizer):
                 # Never synced yet.
                 self.target_replica_uid = None
                 (target_latest_generation,
-                 target_latest_trans_id) = (0, "")
+                 target_latest_generation) = (0, "")
                 (source_last_known_generation,
                  source_last_known_trans_id) = (0, "")
 
@@ -51,26 +59,33 @@ class ZMQSynchronizer(Synchronizer):
         if self.target_replica_uid == source_replica_uid:
             raise InvalidReplicaUID
 
+        print "Validating Last Known info of source that target has..."
+        # Validate last known info about source present at target.
         self.source.validate_gen_and_trans_id(source_last_known_generation,
                                               source_last_known_trans_id)
 
+        print "Finding changes..."
+        # Find changes at source to send to target.
         (sync_target.source_current_gen, sync_target.source_current_trans_id,
          changes) = self.source.whats_changed(source_last_known_generation)
 
+        print "Finding last known information of target known by source..."
         if self.target_replica_uid is None:
-            target_latest_generation, target_latest_trans_id = (0, "")
+            (sync_target.target_last_known_generation,
+            sync_target.target_last_known_trans_id) = (0, "")
         else:
-            target_last_known_generation, target_last_known_trans_id =\
+            (sync_target.target_last_known_generation,
+            sync_target.target_last_known_trans_id) =\
                 self.source._get_replica_gen_and_trans_id(
                     self.target_replica_uid)
 
-
         if not changes and\
-           target_last_known_generation == target_latest_generation:
-            if target_last_known_trans_id != target_latest_trans_id:
-                raise InvalidTransactionID
+           sync_target.target_last_known_generation == target_latest_generation:
+            if sync_target.target_last_known_trans_id != target_latest_trans_id:
+                raise InvalidTransactionId
             return sync_target.source_current_gen
 
+        print "Preparing changes to be sent..."
         changed_doc_ids = [doc_id for doc_id, _, _ in changes]
         docs_to_send = self.source.get_docs(changed_doc_ids,
                                             check_for_conflicts=False,
@@ -82,11 +97,11 @@ class ZMQSynchronizer(Synchronizer):
             docs_by_generation.append((doc, gen, trans_id))
             i += 1
 
+        print "Moving into Sync Exchange..."
         # sync_exchange
         try:
             new_gen, new_trans_id = sync_target.sync_exchange(
                 docs_by_generation, source_replica_uid,
-                target_last_known_generation, target_last_known_trans_id,
                 self._insert_doc_from_target, ensure_callback=ensure_callback)
 
             # TODO: Override complete_sync to change the param being
@@ -96,12 +111,13 @@ class ZMQSynchronizer(Synchronizer):
                 TARGET_REPLICA_UID_KEY: self.target_replica_uid,
                 "new_gen": new_gen,
                 "new_trans_id": new_trans_id,
-                "my_gen": source_current_gen
+                "my_gen": sync_target.source_current_gen
             }
 
             # TODO: Implement defer_decryption in ZMQSyncTarget
             # if defer_decryption and not sync_target.has_syncdb():
             #     defer_decryption = False
+            print "Moving into complete sync..."
             self.complete_sync()
         except Exception as e:
             # TODO: Log this.
@@ -110,7 +126,3 @@ class ZMQSynchronizer(Synchronizer):
             sync_target.stop()
 
         return sync_target.source_current_gen
-
-
-
-

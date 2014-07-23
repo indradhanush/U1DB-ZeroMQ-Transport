@@ -215,12 +215,15 @@ class SendDocumentResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_send_document_response_msg(
-            source_transaction_id="TRANS-ID", inserted=True)
+            source_transaction_id="TRANS-ID", inserted=True,
+            target_replica_generation=1, target_replica_trans_id="TAR-ID")
 
     def test_create_send_document_response_msg(self):
         self.assertIsInstance(self.msg_struct, proto.SendDocumentResponse)
         self.assertEqual(self.msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.inserted, True)
+        self.assertEqual(self.msg_struct.target_replica_generation, 1)
+        self.assertEqual(self.msg_struct.target_replica_trans_id, "TAR-ID")
         self.msg_struct.inserted = False
         self.assertEqual(self.msg_struct.inserted, False)
 
@@ -230,6 +233,8 @@ class SendDocumentResponseTest(BaseMessageTest):
         self.assertIsInstance(parsed_msg_struct, proto.SendDocumentResponse)
         self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(parsed_msg_struct.inserted, True)
+        self.assertEqual(parsed_msg_struct.target_replica_generation, 1)
+        self.assertEqual(parsed_msg_struct.target_replica_trans_id, "TAR-ID")
 
 
 class DocInfoTest(BaseMessageTest):

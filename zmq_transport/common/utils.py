@@ -18,7 +18,7 @@ from zmq_transport.config.u1db_settings import (
     TARGET_REPLICA_GEN_KEY,
     TARGET_REPLICA_TRANS_ID_KEY,
     SOURCE_LAST_KNOWN_GEN_KEY,
-    SOURCE_LAST_KNOWN_TRANS_ID
+    SOURCE_LAST_KNOWN_TRANS_ID_KEY
 )
 
 ######################## Start of Protobuf utilities. ########################
@@ -399,7 +399,7 @@ def get_source_info():
     """
     info = {}
     info[SOURCE_LAST_KNOWN_GEN_KEY] = 8
-    info[SOURCE_LAST_KNOWN_TRANS_ID] = str(uuid.uuid4())
+    info[SOURCE_LAST_KNOWN_TRANS_ID_KEY] = str(uuid.uuid4())
 
     return info
 

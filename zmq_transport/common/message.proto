@@ -100,6 +100,10 @@ message SendDocumentRequest {
 message SendDocumentResponse {
     required string source_transaction_id = 1;
     required bool inserted = 2;
+
+    // Updated target information.
+    required int32 target_replica_generation = 3;
+    required string target_replica_trans_id = 4;
 }
 
 

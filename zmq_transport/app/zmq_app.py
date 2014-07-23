@@ -7,9 +7,9 @@ import functools
 
 # Project dependency imports
 import zmq
-from zmq.eventloop.zmqstream import ZMQStream
-from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
+from zmq.eventloop.ioloop import IOLoop
 from u1db.remote import server_state
+from u1db.errors import InvalidTransactionId
 from u1db import Document
 from google.protobuf.message import DecodeError
 from leap.soledad.common import USER_DB_PREFIX
@@ -19,7 +19,6 @@ from leap.soledad.common import USER_DB_PREFIX
 from zmq_transport.u1db import sync
 from zmq_transport.config.settings import (
     ENDPOINT_APPLICATION_HANDLER,
-    DATABASE_ROOT,
     DATABASE_EXTENSION
 )
 from zmq_transport.config.protobuf_settings import (
@@ -35,7 +34,9 @@ from zmq_transport.config.u1db_settings import (
     TARGET_REPLICA_TRANS_ID_KEY,
     SOURCE_REPLICA_UID_KEY,
     SOURCE_LAST_KNOWN_GEN_KEY,
-    SOURCE_LAST_KNOWN_TRANS_ID
+    SOURCE_LAST_KNOWN_TRANS_ID_KEY,
+    SOURCE_TRANSACTION_ID_KEY,
+    INSERTED_KEY
 )
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.zmq_base import (
@@ -57,12 +58,17 @@ from zmq_transport.common.errors import WhatAreYouTryingToDo
 
 def return_list(f):
     """
-    Decorator that type casts the return value to a list. Doesn't check
-    the return type at all. Therefore use with CAUTION. You know what
-    you are doing if you are using this to decorate your functions.
+    Decorator that type casts the return value to a list. It will just
+    check if the return type is a None, so as to avoid returning [None],
+    it will return None otherwise, whatever be the return type it will
+    wrap it in a list. Therefore use with CAUTION. You know what you are
+    doing if you are using this to decorate your functions.
     """
     functools.wraps(f)
     def wrapper(*args, **kwargs):
+        ret = f(*args, **kwargs)
+        if ret is None:
+            return None
         return [f(*args, **kwargs)]
     return wrapper
 
@@ -110,7 +116,7 @@ class SyncResource(object):
             TARGET_REPLICA_TRANS_ID_KEY: result[2],
             SOURCE_REPLICA_UID_KEY: self._source_replica_uid,
             SOURCE_LAST_KNOWN_GEN_KEY: result[3],
-            SOURCE_LAST_KNOWN_TRANS_ID: result[4]
+            SOURCE_LAST_KNOWN_TRANS_ID_KEY: result[4]
         }
 
     def put(self, generation, transaction_id):
@@ -181,9 +187,14 @@ class SyncResource(object):
         :type gen: int
         :param trans_id: Transaction ID.
         :type trans_id: str
+
+        :return: The new generation and transaction_id after inserting
+                 the document.
+        :rtype: tuple
         """
         doc = Document(id, rev, content)
         self.sync_exch.insert_doc_from_source(doc, gen, trans_id)
+        return self.sync_exch.get_generation_info()
 
     def return_changed_docs(self):
         """
@@ -454,6 +465,8 @@ class ZMQApp(ZMQBaseComponent):
         :param iden_struct: Identifier message structure.
         :type iden_struct: zmq_transport.common.message_pb2.Identifier
         """
+        import pdb
+        pdb.set_trace()
         if iden_struct.type == MSG_TYPE_GET_SYNC_INFO_REQUEST:
             return self.handle_get_sync_info_request(
                 iden_struct.get_sync_info_request)
@@ -501,24 +514,34 @@ class ZMQApp(ZMQBaseComponent):
         sync_resource = self._prepare_u1db_sync_resource(
             send_doc_req_struct.user_id, send_doc_req_struct.source_replica_uid)
 
-        sync_resource.prepare_for_sync_exchange(
-            other_replica_uid=send_doc_req_struct.source_replica_uid)
-
         try:
-            sync_resource.insert_doc(
-                send_doc_req_struct.doc_id, send_doc_req_struct.doc_rev,
-                send_doc_req_struct.doc_content,
-                send_doc_req_struct.doc_generation,
-                send_doc_req_struct.source_transaction_id)
+            sync_resource.prepare_for_sync_exchange(
+                other_replica_uid=send_doc_req_struct.source_replica_uid)
+        except InvalidTransactionId, e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
+
+        kwargs = {SOURCE_TRANSACTION_ID_KEY:
+                  send_doc_req_struct.source_transaction_id}
+        try:
+            new_gen, new_trans_id = sync_resource.insert_doc(
+                    send_doc_req_struct.doc_id, send_doc_req_struct.doc_rev,
+                    send_doc_req_struct.doc_content,
+                    send_doc_req_struct.doc_generation,
+                    send_doc_req_struct.source_transaction_id)
         except:
             # If sync_exch.insert_doc_from_source raises an exception.
+            new_gen = send_doc_req_struct.target_last_known_generation
+            new_trans_id = send_doc_req_struct.target_last_known_trans_id
             status = False
         else:
             status = True
 
-        send_doc_resp_struct = create_send_document_response_msg(
-            source_transaction_id=send_doc_req_struct.source_transaction_id,
-            inserted=status)
+        kwargs[TARGET_REPLICA_GEN_KEY] = new_gen
+        kwargs[TARGET_REPLICA_TRANS_ID_KEY] = new_trans_id
+        kwargs[INSERTED_KEY] = status
+        send_doc_resp_struct = create_send_document_response_msg(**kwargs)
         return proto.Identifier(type=proto.Identifier.SEND_DOCUMENT_RESPONSE,
                                 send_document_response=send_doc_resp_struct)
 
@@ -530,39 +553,34 @@ class ZMQApp(ZMQBaseComponent):
         :return: AllSentResponse message wrapped in an Identifier message.
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
-        def get_docs_to_send():
-            """
-            Finds the documents changed at target.
+        sync_resource = self._prepare_u1db_sync_resource(
+            all_sent_req_struct.user_id,
+            all_sent_req_struct.source_replica_uid)
 
-            :return: A tuple containing a list of document id and
-                     generations that needs to be sent to the source,
-                     the updated target generation and the target
-                     transaction id.
-            :rtype: tuple
-            """
-            sync_resource = self._prepare_u1db_sync_resource(
-                all_sent_req_struct.user_id,
-                all_sent_req_struct.source_replica_uid)
-
+        try:
             sync_resource.prepare_for_sync_exchange(
-                all_sent_req_struct.target_last_known_generation,
-                all_sent_req_struct.target_last_known_trans_id)
+                last_known_generation=\
+                    all_sent_req_struct.target_last_known_generation,
+                last_known_trans_id=\
+                    all_sent_req_struct.target_last_known_trans_id)
+        except InvalidTransactionId, e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
 
-            new_gen = sync_resource.sync_exch.find_changes_to_return()
+        new_gen = sync_resource.sync_exch.find_changes_to_return()
+        new_trans_id = sync_resource.sync_exch.new_trans_id
 
-            new_trans_id = sync_resource.sync_exch.new_trans_id
-            docs_to_send = zip((doc_id for doc_id, _, _ in
-                                sync_resource.sync_exch.changes_to_return),
-                               (gen for _, gen, _ in
-                                sync_resource.sync_exch.changes_to_return))
-            return (docs_to_send, new_gen, new_trans_id)
+        docs_to_send = zip((doc_id for doc_id, _, _ in
+                            sync_resource.sync_exch.changes_to_return),
+                           (gen for _, gen, _ in
+                            sync_resource.sync_exch.changes_to_return))
 
         # TODO: First check if the last doc has been successfully
         # inserted. Or else wait. or timeout maybe? or send some error
         # signal to source ?
         # On Second thoughts this may not be required. Needs discussion.
 
-        docs_to_send, new_gen, new_trans_id = get_docs_to_send()
         all_sent_resp_struct = create_all_sent_response_msg(
             items=docs_to_send,
             target_generation=new_gen, target_trans_id=new_trans_id)
@@ -583,11 +601,27 @@ class ZMQApp(ZMQBaseComponent):
         sync_resource = self._prepare_u1db_sync_resource(
             get_doc_req_struct.user_id,
             get_doc_req_struct.source_replica_uid)
-        sync_resource.prepare_for_sync_exchange(
-            get_doc_req_struct.target_last_known_generation,
-            get_doc_req_struct.target_last_known_trans_id)
+        try:
+            sync_resource.prepare_for_sync_exchange(
+                last_known_generation=\
+                    get_doc_req_struct.target_last_known_generation,
+                last_known_trans_id=\
+                    get_doc_req_struct.target_last_known_trans_id)
+        except InvalidTransactionId, e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
 
         docs_by_gen, new_gen, new_trans_id = sync_resource.return_changed_docs()
+
+        if not docs_by_gen:
+            # TODO: Ideally sync should never come to this, because
+            # source will already know if there are docs that have
+            # changed at the target or not and accordingly make a
+            # request to receive the docs or skip this step
+            # completely. Discuss. And maybe send an empty message
+            # here.
+            pass
 
         doc_structs = []
         for doc in docs_by_gen:
