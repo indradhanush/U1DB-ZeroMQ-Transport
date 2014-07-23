@@ -328,8 +328,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :rtype: tuple
         """
         print "Entering sync_exchange..."
-        import pdb
-        pdb.set_trace()
+
         # Send docs changed at source.
         sync_id = get_sync_id()
         for doc, gen, trans_id in docs_by_generation:
@@ -337,10 +336,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 source_replica_uid, sync_id, doc.doc_id, doc.rev, gen,
                 doc.get_json(), self.source_current_gen,
                 trans_id)
-            (self.target_last_known_generation,
-             self.target_last_known_trans_id) =\
-                (send_doc_resp_struct.target_replica_generation,
-                 send_doc_resp_struct.target_replica_trans_id)
             if not send_doc_resp_struct.inserted:
                 # TODO: Maybe retry? or Report?
                 pass
@@ -387,7 +382,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 return_doc_cb(doc, doc_recvd["doc_generation"],
                               doc_recvd["target_generation"])
 
-        return response.target_generation, response.target_trans_id
+        return all_sent_resp_struct.target_generation,\
+            all_sent_resp_struct.target_trans_id
 
     def close(self):
         pass

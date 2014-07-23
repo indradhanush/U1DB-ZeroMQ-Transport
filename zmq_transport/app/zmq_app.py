@@ -67,9 +67,9 @@ def return_list(f):
     functools.wraps(f)
     def wrapper(*args, **kwargs):
         ret = f(*args, **kwargs)
-        if ret is None:
+        if ret is None or ret == []:
             return None
-        return [f(*args, **kwargs)]
+        return [ret]
     return wrapper
 
 
@@ -130,9 +130,8 @@ class SyncResource(object):
                                      transaction_id)
         return True
 
-    def prepare_for_sync_exchange(self, last_known_generation=None,
-                                  last_known_trans_id=None, ensure=False,
-                                  other_replica_uid=None):
+    def prepare_for_sync_exchange(self, last_known_generation,
+                                  last_known_trans_id, ensure=False):
         """
         Instantiates parameters necessary for sync_exchange to take
         place.
@@ -155,16 +154,6 @@ class SyncResource(object):
             db, self._replica_uid = self._state.ensure_database(self._dbname)
         else:
             db = self._state.open_database(self._dbname)
-
-        if (last_known_generation is None or last_known_trans_id is None):
-            if other_replica_uid:
-                (last_known_generation, last_known_trans_id) =\
-                     db._get_replica_gen_and_trans_id(other_replica_uid)
-            else:
-                raise WhatAreYouTryingToDo(
-                    """Either pass both last_known_generation and
-                    last_known_trans_id or pass other_replica_uid.""")
-
         db.validate_gen_and_trans_id(last_known_generation,
                                      last_known_trans_id)
         self.sync_exch = self.sync_exchange_class(db, self._source_replica_uid,
@@ -446,14 +435,6 @@ class ZMQApp(ZMQBaseComponent):
                         to_send = [str_client_info, r]
                         self.server_handler.send(to_send)
 
-    # def check_updates(self):
-    #     """
-    #     Method to regularly check new updates in self.dataset
-    #     """
-    #     while not self.dataset.empty():
-    #         data = self.dataset.get()
-    #         self.server_handler.send(data)
-
     ####################### End of callbacks. #########################
 
     ############ Start of Application logic server side utilities. ###########
@@ -465,8 +446,6 @@ class ZMQApp(ZMQBaseComponent):
         :param iden_struct: Identifier message structure.
         :type iden_struct: zmq_transport.common.message_pb2.Identifier
         """
-        import pdb
-        pdb.set_trace()
         if iden_struct.type == MSG_TYPE_GET_SYNC_INFO_REQUEST:
             return self.handle_get_sync_info_request(
                 iden_struct.get_sync_info_request)
@@ -516,8 +495,10 @@ class ZMQApp(ZMQBaseComponent):
 
         try:
             sync_resource.prepare_for_sync_exchange(
-                other_replica_uid=send_doc_req_struct.source_replica_uid)
-        except InvalidTransactionId, e:
+                last_known_generation=send_doc_req_struct.target_last_known_generation,
+                last_known_trans_id=send_doc_req_struct.target_last_known_trans_id)
+
+        except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
             return None
@@ -563,7 +544,7 @@ class ZMQApp(ZMQBaseComponent):
                     all_sent_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     all_sent_req_struct.target_last_known_trans_id)
-        except InvalidTransactionId, e:
+        except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
             return None
@@ -596,8 +577,6 @@ class ZMQApp(ZMQBaseComponent):
                  Identifier message.
         :rtype: list
         """
-        import pdb
-        pdb.set_trace()
         sync_resource = self._prepare_u1db_sync_resource(
             get_doc_req_struct.user_id,
             get_doc_req_struct.source_replica_uid)
@@ -607,7 +586,7 @@ class ZMQApp(ZMQBaseComponent):
                     get_doc_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     get_doc_req_struct.target_last_known_trans_id)
-        except InvalidTransactionId, e:
+        except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
             return None

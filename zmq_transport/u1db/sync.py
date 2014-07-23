@@ -26,4 +26,4 @@ class SyncExchange(sync.SyncExchange):
                  target generation and the transaction id.
         :rtype: tuple
         """
-        return self._get_generation_info()
+        return self._db._get_generation_info()
