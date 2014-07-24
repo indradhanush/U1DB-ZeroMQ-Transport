@@ -240,12 +240,14 @@ class SendDocumentResponseTest(BaseMessageTest):
 class DocInfoTest(BaseMessageTest):
 
     def setUp(self):
-        self.msg_struct = create_doc_info_msg(doc_id="DOC-ID", doc_generation=2)
+        self.msg_struct = create_doc_info_msg(doc_id="DOC-ID", doc_generation=2,
+                                              trans_id="TRANS-ID")
 
     def test_create_doc_info_msg(self):
         self.assertIsInstance(self.msg_struct, proto.DocInfo)
         self.assertEqual(self.msg_struct.doc_id, "DOC-ID")
         self.assertEqual(self.msg_struct.doc_generation, 2)
+        self.assertEqual(self.msg_struct.trans_id, "TRANS-ID")
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
@@ -253,13 +255,13 @@ class DocInfoTest(BaseMessageTest):
         self.assertIsInstance(parsed_msg_struct, proto.DocInfo)
         self.assertEqual(parsed_msg_struct.doc_id, "DOC-ID")
         self.assertEqual(parsed_msg_struct.doc_generation, 2)
-
+        self.assertEqual(parsed_msg_struct.trans_id, "TRANS-ID")
 
 class AllSentRequestTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_all_sent_request_msg(
-            user_id="USER-1", source_replica_uid="REP-UID",
+            user_id="USER-1", sync_id="SYNC-1", source_replica_uid="REP-UID",
             total_docs_sent=4, all_sent=True,
             target_last_known_generation=25,
             target_last_known_trans_id="TAR-ID")
@@ -267,6 +269,7 @@ class AllSentRequestTest(BaseMessageTest):
     def test_create_all_sent_request_msg(self):
         self.assertIsInstance(self.msg_struct, proto.AllSentRequest)
         self.assertEqual(self.msg_struct.user_id, "USER-1")
+        self.assertEqual(self.msg_struct.sync_id, "SYNC-1")
         self.assertEqual(self.msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(self.msg_struct.total_docs_sent, 4)
         self.assertEqual(self.msg_struct.all_sent, True)
@@ -279,8 +282,9 @@ class AllSentRequestTest(BaseMessageTest):
         serialized_str = serialize_msg(self.msg_struct)
         parsed_msg_struct = deserialize_msg("AllSentRequest", serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.AllSentRequest)
-        self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(parsed_msg_struct.user_id, "USER-1")
+        self.assertEqual(parsed_msg_struct.sync_id, "SYNC-1")
+        self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(parsed_msg_struct.total_docs_sent, 4)
         self.assertEqual(parsed_msg_struct.all_sent, True)
         self.assertEqual(parsed_msg_struct.target_last_known_generation, 25)
@@ -290,7 +294,8 @@ class AllSentRequestTest(BaseMessageTest):
 class AllSentResponseTest(BaseMessageTest):
 
     def setUp(self):
-        self.items = [("D1", 2), ("D2", 4), ("D3", 9), ("D4", 5)]
+        self.items = [("D1", 2, "T1"), ("D2", 4, "T2"), ("D3", 9, "T3"),
+                      ("D4", 5, "T4")]
         self.msg_struct = create_all_sent_response_msg(
             items=self.items, target_generation=20, target_trans_id="TRANS-ID")
 
@@ -303,6 +308,7 @@ class AllSentResponseTest(BaseMessageTest):
             self.assertEqual(self.msg_struct.doc_info[i].doc_id, self.items[i][0])
             self.assertEqual(self.msg_struct.doc_info[i].doc_generation,
                              self.items[i][1])
+            self.assertEqual(self.msg_struct.doc_info[i].trans_id, self.items[i][2])
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
@@ -318,8 +324,8 @@ class GetDocumentRequestTest(BaseMessageTest):
     def setUp(self):
         self.msg_struct = create_get_document_request_msg(
             user_id="USER-1", source_replica_uid="REP-UID", sync_id="SYNC1",
-            docs_received_count=2,
-            target_last_known_generation=25,
+            doc_id="DOC-ID", doc_generation=10, trans_id="TRANS-ID",
+            docs_received_count=2, target_last_known_generation=25,
             target_last_known_trans_id="TAR-ID")
 
 
@@ -328,6 +334,9 @@ class GetDocumentRequestTest(BaseMessageTest):
         self.assertEqual(self.msg_struct.user_id, "USER-1")
         self.assertEqual(self.msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(self.msg_struct.sync_id, "SYNC1")
+        self.assertEqual(self.msg_struct.doc_id, "DOC-ID")
+        self.assertEqual(self.msg_struct.doc_generation, 10)
+        self.assertEqual(self.msg_struct.trans_id, "TRANS-ID")
         self.assertEqual(self.msg_struct.docs_received_count, 2)
         self.assertEqual(self.msg_struct.target_last_known_generation, 25)
         self.assertEqual(self.msg_struct.target_last_known_trans_id, "TAR-ID")
@@ -339,6 +348,9 @@ class GetDocumentRequestTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.user_id, "USER-1")
         self.assertEqual(parsed_msg_struct.source_replica_uid, "REP-UID")
         self.assertEqual(parsed_msg_struct.sync_id, "SYNC1")
+        self.assertEqual(parsed_msg_struct.doc_id, "DOC-ID")
+        self.assertEqual(parsed_msg_struct.doc_generation, 10)
+        self.assertEqual(parsed_msg_struct.trans_id, "TRANS-ID")
         self.assertEqual(parsed_msg_struct.docs_received_count, 2)
         self.assertEqual(parsed_msg_struct.target_last_known_generation, 25)
         self.assertEqual(parsed_msg_struct.target_last_known_trans_id, "TAR-ID")

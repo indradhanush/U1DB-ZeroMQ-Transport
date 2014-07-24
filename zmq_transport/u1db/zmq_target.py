@@ -47,10 +47,13 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             self.sync_required = False
             self.sync_info = None
             self.user_id = None
+            self.sync_id = None
             self.target_last_known_generation = None
             self.target_last_known_trans_id = None
             self.source_current_gen = None
             self.source_current_trans_id = None
+            self.source_last_known_generation = None
+            self.source_last_known_trans_id = None
         else:
             raise TypeError("Expected type(endpoints) list. Got %s" %
                             (type(endpoints)))
@@ -120,13 +123,12 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: Last time target was synced with source.
         :rtype: tuple
         """
-
         print "Entering get_sync_info..."
         # Create GetSyncInfoRequest message.
-        sync_id = get_sync_id()
+        self.sync_id = get_sync_id()
         get_sync_info_struct = create_get_sync_info_request_msg(
             user_id=self.user_id, source_replica_uid=source_replica_uid,
-            sync_id=sync_id)
+            sync_id=self.sync_id)
         iden_get_sync_info_struct = proto.Identifier(
             type=proto.Identifier.GET_SYNC_INFO_REQUEST,
             get_sync_info_request=get_sync_info_struct)
@@ -173,12 +175,14 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         print "Entering record_sync_info..."
         # Create PutSyncInfoRequest message.
-        sync_id = get_sync_id() # Might have to pass this as a param
         # too or might not be needed at all.
         put_sync_info_struct = create_put_sync_info_request_msg(
-            sync_id=sync_id, source_replica_uid=source_replica_uid,
+            user_id=self.user_id,
+            sync_id=self.sync_id, source_replica_uid=source_replica_uid,
             source_replica_generation=source_replica_generation,
-            source_transaction_id=source_transaction_id)
+            source_transaction_id=source_transaction_id,
+            target_last_known_generation=self.target_last_known_generation,
+            target_last_known_trans_id=self.target_last_known_trans_id)
         iden_put_sync_info_struct = proto.Identifier(
             type=proto.Identifier.PUT_SYNC_INFO_REQUEST,
             put_sync_info_request=put_sync_info_struct)
@@ -204,7 +208,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = parse_response(response, "put_sync_info_response")
         return (response.source_transaction_id, response.inserted)
 
-    def send_doc_info(self, source_replica_uid, sync_id, doc_id, doc_rev,
+    def send_doc_info(self, source_replica_uid, doc_id, doc_rev,
                       doc_generation, doc_content, source_generation,
                       source_transaction_id):
         """
@@ -215,8 +219,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
 
         :param source_replica_uid: The uid that identifies the source db.
         :type source_replica_uid: str
-        :param sync_id: The uid that identifies a particular sync.
-        :type sync_id: str
         :param doc_id: The uid that identifies a particular document.
         :type doc_id: str
         :param doc_generation: Generation of the document.
@@ -224,7 +226,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :param doc_content: Contents of the document.
         :type doc_content: str
         :param source_replica_uid: The uid that identifies the source db.
-        :param sync_id: The uid that identifies a particular sync.
+        :type source_replica_uid: str
         :param source_generation: Generation at source.
         :type source_generation: int
         :param source_transaction_id: The current transaction id at source.
@@ -236,7 +238,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         # Create SendDocumentRequest message.
         send_doc_req_struct = create_send_document_request_msg(
             user_id=self.user_id, source_replica_uid=source_replica_uid,
-            sync_id=sync_id, doc_id=doc_id, doc_rev=doc_rev,
+            sync_id=self.sync_id, doc_id=doc_id, doc_rev=doc_rev,
             doc_generation=doc_generation, doc_content=doc_content,
             source_generation=source_generation,
             source_transaction_id=str(source_transaction_id),
@@ -254,16 +256,16 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         response = self.speaker.recv()[0]
         return parse_response(response, "send_document_response")
 
-    def get_doc_at_target(self, source_replica_uid, sync_id,
-                          docs_received_count):
+    def get_doc_at_target(self, source_replica_uid, doc_info, docs_received_count):
         """
-        Sends a GetDocumentRequest to target to receive documents that were
-        changed at the target replica.
+        Sends a GetDocumentRequest to target to receive documents that
+        were changed at the target replica.
 
         :param source_replica_uid: The identifier of the source replica.
         :type source_replica_uid: str
-        :param sync_id: The sync id of the current sync in process.
-        :type sync_id: str
+        :param doc_info: Doc ID, generation and transaction ID of the
+                         document to be requested.
+        :type doc_info: tuple
         :param docs_received_count: Total count of docs received.
         :type docs_received_count: int
 
@@ -273,7 +275,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         # Create GetDocumentRequest message.
         get_doc_req_struct = create_get_document_request_msg(
             user_id=self.user_id, source_replica_uid=source_replica_uid,
-            sync_id=sync_id, docs_received_count=docs_received_count,
+            sync_id=self.sync_id, doc_id=doc_info[0], doc_generation=doc_info[1],
+            trans_id=doc_info[2], docs_received_count=docs_received_count,
             target_last_known_generation=self.target_last_known_generation,
             target_last_known_trans_id=self.target_last_known_trans_id)
         iden_get_doc_req = proto.Identifier(
@@ -330,10 +333,9 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         print "Entering sync_exchange..."
 
         # Send docs changed at source.
-        sync_id = get_sync_id()
         for doc, gen, trans_id in docs_by_generation:
             send_doc_resp_struct = self.send_doc_info(
-                source_replica_uid, sync_id, doc.doc_id, doc.rev, gen,
+                source_replica_uid, doc.doc_id, doc.rev, gen,
                 doc.get_json(), self.source_current_gen,
                 trans_id)
             if not send_doc_resp_struct.inserted:
@@ -343,7 +345,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         # Intermediate PING-ACK. Also gets notified about incoming
         # docs beforehand.
         all_sent_req_struct = create_all_sent_request_msg(
-            user_id=self.user_id, source_replica_uid=source_replica_uid,
+            user_id=self.user_id, sync_id=self.sync_id,
+            source_replica_uid=source_replica_uid,
             total_docs_sent=len(docs_by_generation), all_sent=True,
             target_last_known_generation=self.target_last_known_generation,
             target_last_known_trans_id=self.target_last_known_trans_id)
@@ -359,21 +362,21 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         # Frame 1: AllSentResponse
         response = self.speaker.recv()[0]
         all_sent_resp_struct = parse_response(response, "all_sent_response")
-        self.target_last_known_generation =\
-                                    all_sent_resp_struct.target_generation
-        self.target_last_known_trans_id = all_sent_resp_struct.target_trans_id
 
         # TODO: What to do with all_sent_resp_struct.doc_info[] ; Maybe request
         # for each doc by id?
+        # List of DocInfo messsage structs.
         docs_list = all_sent_resp_struct.doc_info[:]
 
-        docs_to_receive = len(all_sent_resp_struct.doc_info)
+        docs_to_receive = len(docs_list)
         docs_received = 0
         print "Proceeding to get docs from target...", docs_to_receive
-        while docs_to_receive != 0:
+        for doc_info_struct in docs_list:
             print "docs to receive...", docs_to_receive
+            doc_info = (doc_info_struct.doc_id, doc_info_struct.doc_generation,
+                        doc_info_struct.trans_id)
             doc_recvd = self.get_doc_at_target(
-                source_replica_uid, sync_id, docs_received)
+                source_replica_uid, doc_info, docs_received)
             if doc_recvd.get("doc_id"):
                 docs_received += 1
                 docs_to_receive -= 1
@@ -382,6 +385,9 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                 return_doc_cb(doc, doc_recvd["doc_generation"],
                               doc_recvd["target_generation"])
 
+        self.target_last_known_generation =\
+                all_sent_resp_struct.target_generation
+        self.target_last_known_trans_id = all_sent_resp_struct.target_trans_id
         return all_sent_resp_struct.target_generation,\
             all_sent_resp_struct.target_trans_id
 

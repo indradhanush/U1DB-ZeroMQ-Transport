@@ -50,9 +50,8 @@ class ApplicationException(Exception):
         return self.msg
 
 
-class WhatAreYouTryingToDo(ApplicationException):
+class SyncError(ApplicationException):
     """
-    Raised when improper set of arguments are passed to
-    zmq_app.SyncResource.prepare_for_sync_exchange
+    Raised when an error occurs during the sync.
     """
     pass

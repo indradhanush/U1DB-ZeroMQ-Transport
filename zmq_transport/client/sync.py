@@ -38,8 +38,8 @@ class ZMQSynchronizer(Synchronizer):
         try:
             (self.target_replica_uid, target_latest_generation,
              target_latest_trans_id,
-             source_last_known_generation,
-             source_last_known_trans_id) =\
+             sync_target.source_last_known_generation,
+             sync_target.source_last_known_trans_id) =\
                  sync_target.get_sync_info(source_replica_uid)
         except DatabaseDoesNotExist:
             if not autocreate:
@@ -49,8 +49,8 @@ class ZMQSynchronizer(Synchronizer):
                 self.target_replica_uid = None
                 (target_latest_generation,
                  target_latest_generation) = (0, "")
-                (source_last_known_generation,
-                 source_last_known_trans_id) = (0, "")
+                (sync_target.source_last_known_generation,
+                 sync_target.source_last_known_trans_id) = (0, "")
 
         if self.target_replica_uid is None:
             def ensure_callback(replica_uid):
@@ -61,13 +61,15 @@ class ZMQSynchronizer(Synchronizer):
 
         print "Validating Last Known info of source that target has..."
         # Validate last known info about source present at target.
-        self.source.validate_gen_and_trans_id(source_last_known_generation,
-                                              source_last_known_trans_id)
+        self.source.validate_gen_and_trans_id(
+            sync_target.source_last_known_generation,
+            sync_target.source_last_known_trans_id)
 
         print "Finding changes..."
         # Find changes at source to send to target.
         (sync_target.source_current_gen, sync_target.source_current_trans_id,
-         changes) = self.source.whats_changed(source_last_known_generation)
+         changes) = self.source.whats_changed(
+             sync_target.source_last_known_generation)
 
         print "Finding last known information of target known by source..."
         if self.target_replica_uid is None:
@@ -100,6 +102,9 @@ class ZMQSynchronizer(Synchronizer):
         print "Moving into Sync Exchange..."
         # sync_exchange
         try:
+            # TODO: Returns the new target gen and trans_id but it is
+            # already set as sync_target.target_last_known_generation
+            # and sync_target.target_last_known_trans_id ; Discuss?
             new_gen, new_trans_id = sync_target.sync_exchange(
                 docs_by_generation, source_replica_uid,
                 self._insert_doc_from_target, ensure_callback=ensure_callback)

@@ -244,6 +244,7 @@ def create_all_sent_response_msg(items=[], **kwargs):
         doc_info = msg_struct.doc_info.add()
         doc_info.doc_id = item[0]
         doc_info.doc_generation = item[1]
+        doc_info.trans_id = item[2]
 
     return msg_struct
 
