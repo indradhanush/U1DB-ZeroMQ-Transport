@@ -30,7 +30,6 @@ class ZMQSynchronizer(Synchronizer):
         ensure_callback = None
         source_replica_uid = self.source._replica_uid
 
-        print "Get Sync Info..."
         # get_sync_info
         # source_last_known_generation is the last generation of the
         # source that the target knows of. Similarly for
@@ -59,19 +58,16 @@ class ZMQSynchronizer(Synchronizer):
         if self.target_replica_uid == source_replica_uid:
             raise InvalidReplicaUID
 
-        print "Validating Last Known info of source that target has..."
         # Validate last known info about source present at target.
         self.source.validate_gen_and_trans_id(
             sync_target.source_last_known_generation,
             sync_target.source_last_known_trans_id)
 
-        print "Finding changes..."
         # Find changes at source to send to target.
         (sync_target.source_current_gen, sync_target.source_current_trans_id,
          changes) = self.source.whats_changed(
              sync_target.source_last_known_generation)
 
-        print "Finding last known information of target known by source..."
         if self.target_replica_uid is None:
             (sync_target.target_last_known_generation,
             sync_target.target_last_known_trans_id) = (0, "")
@@ -87,7 +83,6 @@ class ZMQSynchronizer(Synchronizer):
                 raise InvalidTransactionId
             return sync_target.source_current_gen
 
-        print "Preparing changes to be sent..."
         changed_doc_ids = [doc_id for doc_id, _, _ in changes]
         docs_to_send = self.source.get_docs(changed_doc_ids,
                                             check_for_conflicts=False,
@@ -99,7 +94,6 @@ class ZMQSynchronizer(Synchronizer):
             docs_by_generation.append((doc, gen, trans_id))
             i += 1
 
-        print "Moving into Sync Exchange..."
         # sync_exchange
         try:
             # TODO: Returns the new target gen and trans_id but it is
@@ -122,7 +116,6 @@ class ZMQSynchronizer(Synchronizer):
             # TODO: Implement defer_decryption in ZMQSyncTarget
             # if defer_decryption and not sync_target.has_syncdb():
             #     defer_decryption = False
-            print "Moving into complete sync..."
             self.complete_sync()
         except Exception as e:
             # TODO: Log this.

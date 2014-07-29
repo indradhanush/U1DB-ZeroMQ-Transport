@@ -123,7 +123,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: Last time target was synced with source.
         :rtype: tuple
         """
-        print "Entering get_sync_info..."
         # Create GetSyncInfoRequest message.
         self.sync_id = get_sync_id()
         get_sync_info_struct = create_get_sync_info_request_msg(
@@ -173,9 +172,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: source_transaction_id and inserted status.
         :rtype: tuple
         """
-        print "Entering record_sync_info..."
         # Create PutSyncInfoRequest message.
-        # too or might not be needed at all.
         put_sync_info_struct = create_put_sync_info_request_msg(
             user_id=self.user_id,
             sync_id=self.sync_id, source_replica_uid=source_replica_uid,
@@ -188,19 +185,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             put_sync_info_request=put_sync_info_struct)
         str_iden_put_sync_info = serialize_msg(iden_put_sync_info_struct)
 
-        # Create SyncType message.
-        sync_type_struct = create_sync_type_msg(sync_type="sync-from")
-        iden_sync_type = proto.Identifier(type=proto.Identifier.SYNC_TYPE,
-                                          sync_type=sync_type_struct)
-        str_iden_sync_type = serialize_msg(iden_sync_type)
-
-        # Create ZMQVerb message.
-        zmq_verb_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.PUT)
-        iden_zmq_verb_struct = proto.Identifier(type=proto.Identifier.ZMQ_VERB,
-                                         zmq_verb=zmq_verb_struct)
-        str_iden_zmq_verb = serialize_msg(iden_zmq_verb_struct)
-
-        to_send = [str_iden_zmq_verb, str_iden_sync_type, str_iden_put_sync_info]
+        to_send = [str_iden_put_sync_info]
         self.speaker.send(to_send)
 
         # Frame 1: PutSyncInfoResponse;
@@ -330,7 +315,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         :return: Latest transaction generation and id of target.
         :rtype: tuple
         """
-        print "Entering sync_exchange..."
 
         # Send docs changed at source.
         for doc, gen, trans_id in docs_by_generation:
@@ -355,7 +339,6 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             all_sent_request=all_sent_req_struct)
         str_iden_all_sent_req = serialize_msg(iden_all_sent_req)
 
-        print "Sent all docs to target..."
         # Frame 1: AllSentRequest
         self.speaker.send([str_iden_all_sent_req])
 
@@ -370,9 +353,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
 
         docs_to_receive = len(docs_list)
         docs_received = 0
-        print "Proceeding to get docs from target...", docs_to_receive
         for doc_info_struct in docs_list:
-            print "docs to receive...", docs_to_receive
             doc_info = (doc_info_struct.doc_id, doc_info_struct.doc_generation,
                         doc_info_struct.trans_id)
             doc_recvd = self.get_doc_at_target(

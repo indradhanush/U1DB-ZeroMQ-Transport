@@ -55,9 +55,7 @@ from zmq_transport.common.utils import (
     create_put_sync_info_response_msg,
 )
 from zmq_transport.common.errors import (
-    SyncError,
-    DocumentNotInCache,
-    SyncNotRegistered
+    SyncError
 )
 
 
@@ -442,7 +440,7 @@ class ZMQApp(ZMQBaseComponent):
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
         # TODO: Maybe do some application logging here.
-        print "<APPLICATION> Sent: ", msg
+        pass
 
     def handle_rcv_update(self, msg):
         """
@@ -451,8 +449,6 @@ class ZMQApp(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<APPLICATION> Received: ", msg
-
         # Message Format: [str_client_info, msg]
         str_client_info, msg = msg[0], msg[1:]
 

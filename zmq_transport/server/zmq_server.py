@@ -243,7 +243,7 @@ class Server(ZMQBaseComponent):
                       zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.\
                       ZMQStream.on_send
         """
-        print "<SERVER> Sent_to_Client: ", msg
+        pass
 
     def handle_rcv_update_client(self, msg):
         """
@@ -251,7 +251,6 @@ class Server(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<SERVER> Received_from_Client: ", msg
         # Message Format: [connection_id, request_id, delimiter_frame, msg]
         # msg: [ZMQVerb, SyncType, Identifier(Action Message)]
         # Note: msg becomes a list after unpacking. Before that, they
@@ -281,7 +280,7 @@ class Server(ZMQBaseComponent):
         :param status: return result of socket.send_multipart(msg)
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
-        print "<SERVER> Sent_to_App: ", msg
+        pass
 
     def handle_rcv_update_app(self, msg):
         """
@@ -289,7 +288,6 @@ class Server(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<SERVER> Received_from_App: ", msg
         connection_id, msg = msg[0], msg[1:]
 
         if len(msg) == 1:

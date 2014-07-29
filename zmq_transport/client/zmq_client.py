@@ -181,7 +181,7 @@ class ZMQClientBase(ZMQBaseComponent):
         :param status: return result of socket.send_multipart(msg)
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
-        print "<CLIENT> Sent: ", msg, status
+        pass
 
     def handle_rcv_update(self, msg):
         """
@@ -190,18 +190,15 @@ class ZMQClientBase(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<CLIENT> Received: ", msg
         self.dataset.append(msg[0])
 
     def handle_pub_update(self, msg):
         """
         Callback after updates have been revieved from PUB socket.
         """
-        print msg
         key, msg = msg
         subscription = proto.SubscribeRequest()
         subscription.ParseFromString(key)
-        print "<PUBLISHER> Key: ", subscription.key, msg
 
     def check_updates(self):
         """

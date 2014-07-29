@@ -24,5 +24,9 @@ if __name__ == "__main__":
     source = u1db.open(os.path.join(DATABASE_ROOT, "source-USER-1.u1db"), create=False)
 
     synchronizer = ZMQSynchronizer(source, sync_client)
+    import time
+    start = time.time()
     source_current_gen = synchronizer.sync()
+    end = time.time()
     print "Sync Completed: ", source_current_gen
+    print "Total time: ", end - start
