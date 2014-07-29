@@ -438,5 +438,18 @@ class PutSyncInfoResponseTest(BaseMessageTest):
 
 
 class IdentifierTest(BaseMessageTest):
-    pass
+
+    def test_serialize_msg(self):
+        ping = create_ping_msg()
+        msg_struct = proto.Identifier(type=proto.Identifier.PING,
+                                      ping=ping)
+        self.assertIsInstance(msg_struct, proto.Identifier)
+        self.assertEqual(msg_struct.type, proto.Identifier.PING)
+        self.assertIsInstance(msg_struct.ping, proto.Ping)
+        serialized_str = serialize_msg(msg_struct)
+        parsed_msg_struct = deserialize_msg("Identifier", serialized_str)
+
+        self.assertIsInstance(parsed_msg_struct, proto.Identifier)
+        self.assertEqual(parsed_msg_struct.type, msg_struct.type)
+        self.assertIsInstance(parsed_msg_struct.ping, proto.Ping)
 
