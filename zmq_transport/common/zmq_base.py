@@ -52,7 +52,8 @@ class ZMQBaseSocket(object):
         # Performing type checking as it is fairly easy to just send a
         # str in param msg.
         if not isinstance(msg, list):
-            raise TypeError("param msg expected of <type 'list'>. Found %s." % (type(msg)))
+            raise TypeError("param msg expected of <type 'list'>. Found %s."
+                            % (type(msg)))
         self._socket.send_multipart(msg)
 
     def recv(self):

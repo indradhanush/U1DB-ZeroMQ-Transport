@@ -5,5 +5,9 @@
 .*
 *.*~
 venv/
-send_files/
-recv_files/
+database/
+htmlcov/
+
+show_db.py
+reset_env.py
+reset_env.sh

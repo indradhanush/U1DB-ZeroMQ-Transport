@@ -3,6 +3,7 @@
 # Local imports.
 from zmq_transport.common.message_pb2 import Identifier
 
+MSG_TYPE_PING = Identifier.PING
 MSG_TYPE_SUBSCRIBE_REQUEST = Identifier.SUBSCRIBE_REQUEST
 MSG_TYPE_UNSUBSCRIBE_REQUEST = Identifier.UNSUBSCRIBE_REQUEST
 MSG_TYPE_SYNC_TYPE = Identifier.SYNC_TYPE

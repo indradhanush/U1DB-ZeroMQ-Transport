@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='message.proto',
   package='zmq_transport.common',
-  serialized_pb='\n\rmessage.proto\x12\x14zmq_transport.common\"\r\n\x0bPingRequest\"\x1f\n\x10SubscribeRequest\x12\x0b\n\x03key\x18\x01 \x02(\t\"!\n\x12UnsubscribeRequest\x12\x0b\n\x03key\x18\x01 \x02(\t\"\x1d\n\x08SyncType\x12\x11\n\tsync_type\x18\x01 \x02(\t\"k\n\x07ZMQVerb\x12\x30\n\x04verb\x18\x01 \x02(\x0e\x32\".zmq_transport.common.ZMQVerb.Verb\".\n\x04Verb\x12\x07\n\x03GET\x10\x00\x12\x08\n\x04POST\x10\x01\x12\x07\n\x03PUT\x10\x02\x12\n\n\x06\x44\x45LETE\x10\x03\"A\n\x12GetSyncInfoRequest\x12\x1a\n\x12source_replica_uid\x18\x01 \x02(\t\x12\x0f\n\x07sync_id\x18\x02 \x02(\t\"\xbf\x01\n\x13GetSyncInfoResponse\x12\x1a\n\x12target_replica_uid\x18\x01 \x02(\t\x12!\n\x19target_replica_generation\x18\x02 \x02(\x05\x12\x1f\n\x17target_replica_trans_id\x18\x03 \x02(\t\x12$\n\x1csource_last_known_generation\x18\x04 \x02(\x05\x12\"\n\x1asource_last_known_trans_id\x18\x05 \x02(\t\"\xb9\x01\n\x13SendDocumentRequest\x12\x1a\n\x12source_replica_uid\x18\x01 \x02(\t\x12\x0f\n\x07sync_id\x18\x02 \x02(\t\x12\x0e\n\x06\x64oc_id\x18\x03 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x04 \x02(\x05\x12\x13\n\x0b\x64oc_content\x18\x05 \x02(\t\x12\x19\n\x11source_generation\x18\x06 \x02(\x05\x12\x1d\n\x15source_transaction_id\x18\x07 \x02(\t\"G\n\x14SendDocumentResponse\x12\x1d\n\x15source_transaction_id\x18\x01 \x02(\t\x12\x10\n\x08inserted\x18\x02 \x02(\x08\"1\n\x07\x44ocInfo\x12\x0e\n\x06\x64oc_id\x18\x01 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x02 \x02(\x05\";\n\x0e\x41llSentRequest\x12\x17\n\x0ftotal_docs_sent\x18\x01 \x02(\x05\x12\x10\n\x08\x61ll_sent\x18\x02 \x02(\x08\"v\n\x0f\x41llSentResponse\x12\x19\n\x11target_generation\x18\x01 \x02(\x05\x12\x17\n\x0ftarget_trans_id\x18\x02 \x02(\t\x12/\n\x08\x64oc_info\x18\x03 \x03(\x0b\x32\x1d.zmq_transport.common.DocInfo\"^\n\x12GetDocumentRequest\x12\x1a\n\x12source_replica_uid\x18\x01 \x02(\t\x12\x0f\n\x07sync_id\x18\x02 \x02(\t\x12\x1b\n\x13\x64ocs_received_count\x18\x03 \x02(\x05\"\x97\x01\n\x13GetDocumentResponse\x12\x0e\n\x06\x64oc_id\x18\x01 \x02(\t\x12\x0f\n\x07\x64oc_rev\x18\x02 \x02(\x05\x12\x16\n\x0e\x64oc_generation\x18\x03 \x02(\x05\x12\x13\n\x0b\x64oc_content\x18\x04 \x02(\t\x12\x19\n\x11target_generation\x18\x05 \x01(\x05\x12\x17\n\x0ftarget_trans_id\x18\x06 \x01(\t\"\x83\x01\n\x12PutSyncInfoRequest\x12\x0f\n\x07sync_id\x18\x01 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x02 \x02(\t\x12!\n\x19source_replica_generation\x18\x03 \x02(\x05\x12\x1d\n\x15source_transaction_id\x18\x04 \x02(\t\"F\n\x13PutSyncInfoResponse\x12\x1d\n\x15source_transaction_id\x18\x01 \x02(\t\x12\x10\n\x08inserted\x18\x02 \x02(\x08\"\x9d\x0b\n\nIdentifier\x12\x33\n\x04type\x18\x01 \x02(\x0e\x32%.zmq_transport.common.Identifier.Type\x12\x41\n\x11subscribe_request\x18\x02 \x01(\x0b\x32&.zmq_transport.common.SubscribeRequest\x12\x45\n\x13unsubscribe_request\x18\x03 \x01(\x0b\x32(.zmq_transport.common.UnsubscribeRequest\x12\x31\n\tsync_type\x18\x04 \x01(\x0b\x32\x1e.zmq_transport.common.SyncType\x12/\n\x08zmq_verb\x18\x05 \x01(\x0b\x32\x1d.zmq_transport.common.ZMQVerb\x12G\n\x15get_sync_info_request\x18\x06 \x01(\x0b\x32(.zmq_transport.common.GetSyncInfoRequest\x12I\n\x16get_sync_info_response\x18\x07 \x01(\x0b\x32).zmq_transport.common.GetSyncInfoResponse\x12H\n\x15send_document_request\x18\x08 \x01(\x0b\x32).zmq_transport.common.SendDocumentRequest\x12J\n\x16send_document_response\x18\t \x01(\x0b\x32*.zmq_transport.common.SendDocumentResponse\x12/\n\x08\x64oc_info\x18\n \x01(\x0b\x32\x1d.zmq_transport.common.DocInfo\x12>\n\x10\x61ll_sent_request\x18\x0b \x01(\x0b\x32$.zmq_transport.common.AllSentRequest\x12@\n\x11\x61ll_sent_response\x18\x0c \x01(\x0b\x32%.zmq_transport.common.AllSentResponse\x12\x46\n\x14get_document_request\x18\r \x01(\x0b\x32(.zmq_transport.common.GetDocumentRequest\x12H\n\x15get_document_response\x18\x0e \x01(\x0b\x32).zmq_transport.common.GetDocumentResponse\x12G\n\x15put_sync_info_request\x18\x0f \x01(\x0b\x32(.zmq_transport.common.PutSyncInfoRequest\x12I\n\x16put_sync_info_response\x18\x10 \x01(\x0b\x32).zmq_transport.common.PutSyncInfoResponse\"\xe8\x02\n\x04Type\x12\x15\n\x11SUBSCRIBE_REQUEST\x10\x01\x12\x17\n\x13UNSUBSCRIBE_REQUEST\x10\x02\x12\r\n\tSYNC_TYPE\x10\x03\x12\x0c\n\x08ZMQ_VERB\x10\x04\x12\x19\n\x15GET_SYNC_INFO_REQUEST\x10\x05\x12\x1a\n\x16GET_SYNC_INFO_RESPONSE\x10\x06\x12\x19\n\x15SEND_DOCUMENT_REQUEST\x10\x07\x12\x1a\n\x16SEND_DOCUMENT_RESPONSE\x10\x08\x12\x0c\n\x08\x44OC_INFO\x10\t\x12\x14\n\x10\x41LL_SENT_REQUEST\x10\n\x12\x15\n\x11\x41LL_SENT_RESPONSE\x10\x0b\x12\x18\n\x14GET_DOCUMENT_REQUEST\x10\x0c\x12\x19\n\x15GET_DOCUMENT_RESPONSE\x10\r\x12\x19\n\x15PUT_SYNC_INFO_REQUEST\x10\x0e\x12\x1a\n\x16PUT_SYNC_INFO_RESPONSE\x10\x0f')
+  serialized_pb='\n\rmessage.proto\x12\x14zmq_transport.common\"\x06\n\x04Ping\"3\n\nClientInfo\x12\x11\n\tclient_id\x18\x01 \x02(\x0c\x12\x12\n\nrequest_id\x18\x02 \x02(\x0c\"\x1f\n\x10SubscribeRequest\x12\x0b\n\x03key\x18\x01 \x02(\t\"!\n\x12UnsubscribeRequest\x12\x0b\n\x03key\x18\x01 \x02(\t\"\x1d\n\x08SyncType\x12\x11\n\tsync_type\x18\x01 \x02(\t\"k\n\x07ZMQVerb\x12\x30\n\x04verb\x18\x01 \x02(\x0e\x32\".zmq_transport.common.ZMQVerb.Verb\".\n\x04Verb\x12\x07\n\x03GET\x10\x00\x12\x08\n\x04POST\x10\x01\x12\x07\n\x03PUT\x10\x02\x12\n\n\x06\x44\x45LETE\x10\x03\"R\n\x12GetSyncInfoRequest\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x02 \x02(\t\x12\x0f\n\x07sync_id\x18\x03 \x02(\t\"\xbf\x01\n\x13GetSyncInfoResponse\x12\x1a\n\x12target_replica_uid\x18\x01 \x02(\t\x12!\n\x19target_replica_generation\x18\x02 \x02(\x05\x12\x1f\n\x17target_replica_trans_id\x18\x03 \x02(\t\x12$\n\x1csource_last_known_generation\x18\x04 \x02(\x05\x12\"\n\x1asource_last_known_trans_id\x18\x05 \x02(\t\"\xa5\x02\n\x13SendDocumentRequest\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x02 \x02(\t\x12\x0f\n\x07sync_id\x18\x03 \x02(\t\x12\x0e\n\x06\x64oc_id\x18\x04 \x02(\t\x12\x0f\n\x07\x64oc_rev\x18\x05 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x06 \x02(\x05\x12\x13\n\x0b\x64oc_content\x18\x07 \x02(\t\x12\x19\n\x11source_generation\x18\x08 \x02(\x05\x12\x1d\n\x15source_transaction_id\x18\t \x02(\t\x12$\n\x1ctarget_last_known_generation\x18\n \x02(\x05\x12\"\n\x1atarget_last_known_trans_id\x18\x0b \x02(\t\"\x8b\x01\n\x14SendDocumentResponse\x12\x1d\n\x15source_transaction_id\x18\x01 \x02(\t\x12\x10\n\x08inserted\x18\x02 \x02(\x08\x12!\n\x19target_replica_generation\x18\x03 \x02(\x05\x12\x1f\n\x17target_replica_trans_id\x18\x04 \x02(\t\"C\n\x07\x44ocInfo\x12\x0e\n\x06\x64oc_id\x18\x01 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x02 \x02(\x05\x12\x10\n\x08trans_id\x18\x03 \x02(\t\"\xc3\x01\n\x0e\x41llSentRequest\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x0f\n\x07sync_id\x18\x02 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x03 \x02(\t\x12\x17\n\x0ftotal_docs_sent\x18\x04 \x02(\x05\x12\x10\n\x08\x61ll_sent\x18\x05 \x02(\x08\x12$\n\x1ctarget_last_known_generation\x18\x07 \x02(\x05\x12\"\n\x1atarget_last_known_trans_id\x18\x08 \x02(\t\"v\n\x0f\x41llSentResponse\x12\x19\n\x11target_generation\x18\x01 \x02(\x05\x12\x17\n\x0ftarget_trans_id\x18\x02 \x02(\t\x12/\n\x08\x64oc_info\x18\x03 \x03(\x0b\x32\x1d.zmq_transport.common.DocInfo\"\xf3\x01\n\x12GetDocumentRequest\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x02 \x02(\t\x12\x0f\n\x07sync_id\x18\x03 \x02(\t\x12\x0e\n\x06\x64oc_id\x18\x04 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x05 \x02(\x05\x12\x10\n\x08trans_id\x18\x06 \x02(\t\x12\x1b\n\x13\x64ocs_received_count\x18\x07 \x02(\x05\x12$\n\x1ctarget_last_known_generation\x18\x08 \x02(\x05\x12\"\n\x1atarget_last_known_trans_id\x18\t \x02(\t\"\x97\x01\n\x13GetDocumentResponse\x12\x0e\n\x06\x64oc_id\x18\x01 \x02(\t\x12\x0f\n\x07\x64oc_rev\x18\x02 \x02(\t\x12\x16\n\x0e\x64oc_generation\x18\x03 \x02(\x05\x12\x13\n\x0b\x64oc_content\x18\x04 \x02(\t\x12\x19\n\x11target_generation\x18\x05 \x01(\x05\x12\x17\n\x0ftarget_trans_id\x18\x06 \x01(\t\"\xde\x01\n\x12PutSyncInfoRequest\x12\x0f\n\x07user_id\x18\x01 \x02(\t\x12\x0f\n\x07sync_id\x18\x02 \x02(\t\x12\x1a\n\x12source_replica_uid\x18\x03 \x02(\t\x12!\n\x19source_replica_generation\x18\x04 \x02(\x05\x12\x1d\n\x15source_transaction_id\x18\x05 \x02(\t\x12$\n\x1ctarget_last_known_generation\x18\x06 \x02(\x05\x12\"\n\x1atarget_last_known_trans_id\x18\x07 \x02(\t\"F\n\x13PutSyncInfoResponse\x12\x1d\n\x15source_transaction_id\x18\x01 \x02(\t\x12\x10\n\x08inserted\x18\x02 \x02(\x08\"\xd1\x0b\n\nIdentifier\x12\x33\n\x04type\x18\x01 \x02(\x0e\x32%.zmq_transport.common.Identifier.Type\x12(\n\x04ping\x18\x02 \x01(\x0b\x32\x1a.zmq_transport.common.Ping\x12\x41\n\x11subscribe_request\x18\x03 \x01(\x0b\x32&.zmq_transport.common.SubscribeRequest\x12\x45\n\x13unsubscribe_request\x18\x04 \x01(\x0b\x32(.zmq_transport.common.UnsubscribeRequest\x12\x31\n\tsync_type\x18\x05 \x01(\x0b\x32\x1e.zmq_transport.common.SyncType\x12/\n\x08zmq_verb\x18\x06 \x01(\x0b\x32\x1d.zmq_transport.common.ZMQVerb\x12G\n\x15get_sync_info_request\x18\x07 \x01(\x0b\x32(.zmq_transport.common.GetSyncInfoRequest\x12I\n\x16get_sync_info_response\x18\x08 \x01(\x0b\x32).zmq_transport.common.GetSyncInfoResponse\x12H\n\x15send_document_request\x18\t \x01(\x0b\x32).zmq_transport.common.SendDocumentRequest\x12J\n\x16send_document_response\x18\n \x01(\x0b\x32*.zmq_transport.common.SendDocumentResponse\x12/\n\x08\x64oc_info\x18\x0b \x01(\x0b\x32\x1d.zmq_transport.common.DocInfo\x12>\n\x10\x61ll_sent_request\x18\x0c \x01(\x0b\x32$.zmq_transport.common.AllSentRequest\x12@\n\x11\x61ll_sent_response\x18\r \x01(\x0b\x32%.zmq_transport.common.AllSentResponse\x12\x46\n\x14get_document_request\x18\x0e \x01(\x0b\x32(.zmq_transport.common.GetDocumentRequest\x12H\n\x15get_document_response\x18\x0f \x01(\x0b\x32).zmq_transport.common.GetDocumentResponse\x12G\n\x15put_sync_info_request\x18\x10 \x01(\x0b\x32(.zmq_transport.common.PutSyncInfoRequest\x12I\n\x16put_sync_info_response\x18\x11 \x01(\x0b\x32).zmq_transport.common.PutSyncInfoResponse\"\xf2\x02\n\x04Type\x12\x08\n\x04PING\x10\x01\x12\x15\n\x11SUBSCRIBE_REQUEST\x10\x02\x12\x17\n\x13UNSUBSCRIBE_REQUEST\x10\x03\x12\r\n\tSYNC_TYPE\x10\x04\x12\x0c\n\x08ZMQ_VERB\x10\x05\x12\x19\n\x15GET_SYNC_INFO_REQUEST\x10\x06\x12\x1a\n\x16GET_SYNC_INFO_RESPONSE\x10\x07\x12\x19\n\x15SEND_DOCUMENT_REQUEST\x10\x08\x12\x1a\n\x16SEND_DOCUMENT_RESPONSE\x10\t\x12\x0c\n\x08\x44OC_INFO\x10\n\x12\x14\n\x10\x41LL_SENT_REQUEST\x10\x0b\x12\x15\n\x11\x41LL_SENT_RESPONSE\x10\x0c\x12\x18\n\x14GET_DOCUMENT_REQUEST\x10\r\x12\x19\n\x15GET_DOCUMENT_RESPONSE\x10\x0e\x12\x19\n\x15PUT_SYNC_INFO_REQUEST\x10\x0f\x12\x1a\n\x16PUT_SYNC_INFO_RESPONSE\x10\x10')
 
 
 
@@ -42,8 +42,8 @@ _ZMQVERB_VERB = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=214,
-  serialized_end=260,
+  serialized_start=260,
+  serialized_end=306,
 )
 
 _IDENTIFIER_TYPE = _descriptor.EnumDescriptor(
@@ -53,76 +53,80 @@ _IDENTIFIER_TYPE = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='SUBSCRIBE_REQUEST', index=0, number=1,
+      name='PING', index=0, number=1,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='UNSUBSCRIBE_REQUEST', index=1, number=2,
+      name='SUBSCRIBE_REQUEST', index=1, number=2,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SYNC_TYPE', index=2, number=3,
+      name='UNSUBSCRIBE_REQUEST', index=2, number=3,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ZMQ_VERB', index=3, number=4,
+      name='SYNC_TYPE', index=3, number=4,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='GET_SYNC_INFO_REQUEST', index=4, number=5,
+      name='ZMQ_VERB', index=4, number=5,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='GET_SYNC_INFO_RESPONSE', index=5, number=6,
+      name='GET_SYNC_INFO_REQUEST', index=5, number=6,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SEND_DOCUMENT_REQUEST', index=6, number=7,
+      name='GET_SYNC_INFO_RESPONSE', index=6, number=7,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SEND_DOCUMENT_RESPONSE', index=7, number=8,
+      name='SEND_DOCUMENT_REQUEST', index=7, number=8,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='DOC_INFO', index=8, number=9,
+      name='SEND_DOCUMENT_RESPONSE', index=8, number=9,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ALL_SENT_REQUEST', index=9, number=10,
+      name='DOC_INFO', index=9, number=10,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ALL_SENT_RESPONSE', index=10, number=11,
+      name='ALL_SENT_REQUEST', index=10, number=11,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='GET_DOCUMENT_REQUEST', index=11, number=12,
+      name='ALL_SENT_RESPONSE', index=11, number=12,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='GET_DOCUMENT_RESPONSE', index=12, number=13,
+      name='GET_DOCUMENT_REQUEST', index=12, number=13,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='PUT_SYNC_INFO_REQUEST', index=13, number=14,
+      name='GET_DOCUMENT_RESPONSE', index=13, number=14,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='PUT_SYNC_INFO_RESPONSE', index=14, number=15,
+      name='PUT_SYNC_INFO_REQUEST', index=14, number=15,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='PUT_SYNC_INFO_RESPONSE', index=15, number=16,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=2550,
-  serialized_end=2910,
+  serialized_start=3228,
+  serialized_end=3598,
 )
 
 
-_PINGREQUEST = _descriptor.Descriptor(
-  name='PingRequest',
-  full_name='zmq_transport.common.PingRequest',
+_PING = _descriptor.Descriptor(
+  name='Ping',
+  full_name='zmq_transport.common.Ping',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
@@ -137,7 +141,42 @@ _PINGREQUEST = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=39,
-  serialized_end=52,
+  serialized_end=45,
+)
+
+
+_CLIENTINFO = _descriptor.Descriptor(
+  name='ClientInfo',
+  full_name='zmq_transport.common.ClientInfo',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='client_id', full_name='zmq_transport.common.ClientInfo.client_id', index=0,
+      number=1, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value="",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='request_id', full_name='zmq_transport.common.ClientInfo.request_id', index=1,
+      number=2, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value="",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=47,
+  serialized_end=98,
 )
 
 
@@ -164,8 +203,8 @@ _SUBSCRIBEREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=54,
-  serialized_end=85,
+  serialized_start=100,
+  serialized_end=131,
 )
 
 
@@ -192,8 +231,8 @@ _UNSUBSCRIBEREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=87,
-  serialized_end=120,
+  serialized_start=133,
+  serialized_end=166,
 )
 
 
@@ -220,8 +259,8 @@ _SYNCTYPE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=122,
-  serialized_end=151,
+  serialized_start=168,
+  serialized_end=197,
 )
 
 
@@ -249,8 +288,8 @@ _ZMQVERB = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=153,
-  serialized_end=260,
+  serialized_start=199,
+  serialized_end=306,
 )
 
 
@@ -262,15 +301,22 @@ _GETSYNCINFOREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='source_replica_uid', full_name='zmq_transport.common.GetSyncInfoRequest.source_replica_uid', index=0,
+      name='user_id', full_name='zmq_transport.common.GetSyncInfoRequest.user_id', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sync_id', full_name='zmq_transport.common.GetSyncInfoRequest.sync_id', index=1,
+      name='source_replica_uid', full_name='zmq_transport.common.GetSyncInfoRequest.source_replica_uid', index=1,
       number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sync_id', full_name='zmq_transport.common.GetSyncInfoRequest.sync_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -284,8 +330,8 @@ _GETSYNCINFOREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=262,
-  serialized_end=327,
+  serialized_start=308,
+  serialized_end=390,
 )
 
 
@@ -340,8 +386,8 @@ _GETSYNCINFORESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=330,
-  serialized_end=521,
+  serialized_start=393,
+  serialized_end=584,
 )
 
 
@@ -353,50 +399,78 @@ _SENDDOCUMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='source_replica_uid', full_name='zmq_transport.common.SendDocumentRequest.source_replica_uid', index=0,
+      name='user_id', full_name='zmq_transport.common.SendDocumentRequest.user_id', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sync_id', full_name='zmq_transport.common.SendDocumentRequest.sync_id', index=1,
+      name='source_replica_uid', full_name='zmq_transport.common.SendDocumentRequest.source_replica_uid', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='doc_id', full_name='zmq_transport.common.SendDocumentRequest.doc_id', index=2,
+      name='sync_id', full_name='zmq_transport.common.SendDocumentRequest.sync_id', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='doc_generation', full_name='zmq_transport.common.SendDocumentRequest.doc_generation', index=3,
-      number=4, type=5, cpp_type=1, label=2,
-      has_default_value=False, default_value=0,
+      name='doc_id', full_name='zmq_transport.common.SendDocumentRequest.doc_id', index=3,
+      number=4, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='doc_content', full_name='zmq_transport.common.SendDocumentRequest.doc_content', index=4,
+      name='doc_rev', full_name='zmq_transport.common.SendDocumentRequest.doc_rev', index=4,
       number=5, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='source_generation', full_name='zmq_transport.common.SendDocumentRequest.source_generation', index=5,
+      name='doc_generation', full_name='zmq_transport.common.SendDocumentRequest.doc_generation', index=5,
       number=6, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='source_transaction_id', full_name='zmq_transport.common.SendDocumentRequest.source_transaction_id', index=6,
+      name='doc_content', full_name='zmq_transport.common.SendDocumentRequest.doc_content', index=6,
       number=7, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='source_generation', full_name='zmq_transport.common.SendDocumentRequest.source_generation', index=7,
+      number=8, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='source_transaction_id', full_name='zmq_transport.common.SendDocumentRequest.source_transaction_id', index=8,
+      number=9, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_generation', full_name='zmq_transport.common.SendDocumentRequest.target_last_known_generation', index=9,
+      number=10, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_trans_id', full_name='zmq_transport.common.SendDocumentRequest.target_last_known_trans_id', index=10,
+      number=11, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -410,8 +484,8 @@ _SENDDOCUMENTREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=524,
-  serialized_end=709,
+  serialized_start=587,
+  serialized_end=880,
 )
 
 
@@ -436,6 +510,20 @@ _SENDDOCUMENTRESPONSE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='target_replica_generation', full_name='zmq_transport.common.SendDocumentResponse.target_replica_generation', index=2,
+      number=3, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_replica_trans_id', full_name='zmq_transport.common.SendDocumentResponse.target_replica_trans_id', index=3,
+      number=4, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -445,8 +533,8 @@ _SENDDOCUMENTRESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=711,
-  serialized_end=782,
+  serialized_start=883,
+  serialized_end=1022,
 )
 
 
@@ -471,6 +559,13 @@ _DOCINFO = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='trans_id', full_name='zmq_transport.common.DocInfo.trans_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -480,8 +575,8 @@ _DOCINFO = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=784,
-  serialized_end=833,
+  serialized_start=1024,
+  serialized_end=1091,
 )
 
 
@@ -493,16 +588,51 @@ _ALLSENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='total_docs_sent', full_name='zmq_transport.common.AllSentRequest.total_docs_sent', index=0,
-      number=1, type=5, cpp_type=1, label=2,
+      name='user_id', full_name='zmq_transport.common.AllSentRequest.user_id', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sync_id', full_name='zmq_transport.common.AllSentRequest.sync_id', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='source_replica_uid', full_name='zmq_transport.common.AllSentRequest.source_replica_uid', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='total_docs_sent', full_name='zmq_transport.common.AllSentRequest.total_docs_sent', index=3,
+      number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='all_sent', full_name='zmq_transport.common.AllSentRequest.all_sent', index=1,
-      number=2, type=8, cpp_type=7, label=2,
+      name='all_sent', full_name='zmq_transport.common.AllSentRequest.all_sent', index=4,
+      number=5, type=8, cpp_type=7, label=2,
       has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_generation', full_name='zmq_transport.common.AllSentRequest.target_last_known_generation', index=5,
+      number=7, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_trans_id', full_name='zmq_transport.common.AllSentRequest.target_last_known_trans_id', index=6,
+      number=8, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -515,8 +645,8 @@ _ALLSENTREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=835,
-  serialized_end=894,
+  serialized_start=1094,
+  serialized_end=1289,
 )
 
 
@@ -557,8 +687,8 @@ _ALLSENTRESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=896,
-  serialized_end=1014,
+  serialized_start=1291,
+  serialized_end=1409,
 )
 
 
@@ -570,23 +700,65 @@ _GETDOCUMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='source_replica_uid', full_name='zmq_transport.common.GetDocumentRequest.source_replica_uid', index=0,
+      name='user_id', full_name='zmq_transport.common.GetDocumentRequest.user_id', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sync_id', full_name='zmq_transport.common.GetDocumentRequest.sync_id', index=1,
+      name='source_replica_uid', full_name='zmq_transport.common.GetDocumentRequest.source_replica_uid', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='docs_received_count', full_name='zmq_transport.common.GetDocumentRequest.docs_received_count', index=2,
-      number=3, type=5, cpp_type=1, label=2,
+      name='sync_id', full_name='zmq_transport.common.GetDocumentRequest.sync_id', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='doc_id', full_name='zmq_transport.common.GetDocumentRequest.doc_id', index=3,
+      number=4, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='doc_generation', full_name='zmq_transport.common.GetDocumentRequest.doc_generation', index=4,
+      number=5, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='trans_id', full_name='zmq_transport.common.GetDocumentRequest.trans_id', index=5,
+      number=6, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='docs_received_count', full_name='zmq_transport.common.GetDocumentRequest.docs_received_count', index=6,
+      number=7, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_generation', full_name='zmq_transport.common.GetDocumentRequest.target_last_known_generation', index=7,
+      number=8, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_trans_id', full_name='zmq_transport.common.GetDocumentRequest.target_last_known_trans_id', index=8,
+      number=9, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -599,8 +771,8 @@ _GETDOCUMENTREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1016,
-  serialized_end=1110,
+  serialized_start=1412,
+  serialized_end=1655,
 )
 
 
@@ -620,8 +792,8 @@ _GETDOCUMENTRESPONSE = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='doc_rev', full_name='zmq_transport.common.GetDocumentResponse.doc_rev', index=1,
-      number=2, type=5, cpp_type=1, label=2,
-      has_default_value=False, default_value=0,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -662,8 +834,8 @@ _GETDOCUMENTRESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1113,
-  serialized_end=1264,
+  serialized_start=1658,
+  serialized_end=1809,
 )
 
 
@@ -675,29 +847,50 @@ _PUTSYNCINFOREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='sync_id', full_name='zmq_transport.common.PutSyncInfoRequest.sync_id', index=0,
+      name='user_id', full_name='zmq_transport.common.PutSyncInfoRequest.user_id', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='source_replica_uid', full_name='zmq_transport.common.PutSyncInfoRequest.source_replica_uid', index=1,
+      name='sync_id', full_name='zmq_transport.common.PutSyncInfoRequest.sync_id', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='source_replica_generation', full_name='zmq_transport.common.PutSyncInfoRequest.source_replica_generation', index=2,
-      number=3, type=5, cpp_type=1, label=2,
+      name='source_replica_uid', full_name='zmq_transport.common.PutSyncInfoRequest.source_replica_uid', index=2,
+      number=3, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='source_replica_generation', full_name='zmq_transport.common.PutSyncInfoRequest.source_replica_generation', index=3,
+      number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='source_transaction_id', full_name='zmq_transport.common.PutSyncInfoRequest.source_transaction_id', index=3,
-      number=4, type=9, cpp_type=9, label=2,
+      name='source_transaction_id', full_name='zmq_transport.common.PutSyncInfoRequest.source_transaction_id', index=4,
+      number=5, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_generation', full_name='zmq_transport.common.PutSyncInfoRequest.target_last_known_generation', index=5,
+      number=6, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target_last_known_trans_id', full_name='zmq_transport.common.PutSyncInfoRequest.target_last_known_trans_id', index=6,
+      number=7, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -711,8 +904,8 @@ _PUTSYNCINFOREQUEST = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1267,
-  serialized_end=1398,
+  serialized_start=1812,
+  serialized_end=2034,
 )
 
 
@@ -746,8 +939,8 @@ _PUTSYNCINFORESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1400,
-  serialized_end=1470,
+  serialized_start=2036,
+  serialized_end=2106,
 )
 
 
@@ -766,106 +959,113 @@ _IDENTIFIER = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='subscribe_request', full_name='zmq_transport.common.Identifier.subscribe_request', index=1,
+      name='ping', full_name='zmq_transport.common.Identifier.ping', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='unsubscribe_request', full_name='zmq_transport.common.Identifier.unsubscribe_request', index=2,
+      name='subscribe_request', full_name='zmq_transport.common.Identifier.subscribe_request', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sync_type', full_name='zmq_transport.common.Identifier.sync_type', index=3,
+      name='unsubscribe_request', full_name='zmq_transport.common.Identifier.unsubscribe_request', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='zmq_verb', full_name='zmq_transport.common.Identifier.zmq_verb', index=4,
+      name='sync_type', full_name='zmq_transport.common.Identifier.sync_type', index=4,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='get_sync_info_request', full_name='zmq_transport.common.Identifier.get_sync_info_request', index=5,
+      name='zmq_verb', full_name='zmq_transport.common.Identifier.zmq_verb', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='get_sync_info_response', full_name='zmq_transport.common.Identifier.get_sync_info_response', index=6,
+      name='get_sync_info_request', full_name='zmq_transport.common.Identifier.get_sync_info_request', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='send_document_request', full_name='zmq_transport.common.Identifier.send_document_request', index=7,
+      name='get_sync_info_response', full_name='zmq_transport.common.Identifier.get_sync_info_response', index=7,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='send_document_response', full_name='zmq_transport.common.Identifier.send_document_response', index=8,
+      name='send_document_request', full_name='zmq_transport.common.Identifier.send_document_request', index=8,
       number=9, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='doc_info', full_name='zmq_transport.common.Identifier.doc_info', index=9,
+      name='send_document_response', full_name='zmq_transport.common.Identifier.send_document_response', index=9,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='all_sent_request', full_name='zmq_transport.common.Identifier.all_sent_request', index=10,
+      name='doc_info', full_name='zmq_transport.common.Identifier.doc_info', index=10,
       number=11, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='all_sent_response', full_name='zmq_transport.common.Identifier.all_sent_response', index=11,
+      name='all_sent_request', full_name='zmq_transport.common.Identifier.all_sent_request', index=11,
       number=12, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='get_document_request', full_name='zmq_transport.common.Identifier.get_document_request', index=12,
+      name='all_sent_response', full_name='zmq_transport.common.Identifier.all_sent_response', index=12,
       number=13, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='get_document_response', full_name='zmq_transport.common.Identifier.get_document_response', index=13,
+      name='get_document_request', full_name='zmq_transport.common.Identifier.get_document_request', index=13,
       number=14, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='put_sync_info_request', full_name='zmq_transport.common.Identifier.put_sync_info_request', index=14,
+      name='get_document_response', full_name='zmq_transport.common.Identifier.get_document_response', index=14,
       number=15, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='put_sync_info_response', full_name='zmq_transport.common.Identifier.put_sync_info_response', index=15,
+      name='put_sync_info_request', full_name='zmq_transport.common.Identifier.put_sync_info_request', index=15,
       number=16, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='put_sync_info_response', full_name='zmq_transport.common.Identifier.put_sync_info_response', index=16,
+      number=17, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -880,14 +1080,15 @@ _IDENTIFIER = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1473,
-  serialized_end=2910,
+  serialized_start=2109,
+  serialized_end=3598,
 )
 
 _ZMQVERB.fields_by_name['verb'].enum_type = _ZMQVERB_VERB
 _ZMQVERB_VERB.containing_type = _ZMQVERB;
 _ALLSENTRESPONSE.fields_by_name['doc_info'].message_type = _DOCINFO
 _IDENTIFIER.fields_by_name['type'].enum_type = _IDENTIFIER_TYPE
+_IDENTIFIER.fields_by_name['ping'].message_type = _PING
 _IDENTIFIER.fields_by_name['subscribe_request'].message_type = _SUBSCRIBEREQUEST
 _IDENTIFIER.fields_by_name['unsubscribe_request'].message_type = _UNSUBSCRIBEREQUEST
 _IDENTIFIER.fields_by_name['sync_type'].message_type = _SYNCTYPE
@@ -904,7 +1105,8 @@ _IDENTIFIER.fields_by_name['get_document_response'].message_type = _GETDOCUMENTR
 _IDENTIFIER.fields_by_name['put_sync_info_request'].message_type = _PUTSYNCINFOREQUEST
 _IDENTIFIER.fields_by_name['put_sync_info_response'].message_type = _PUTSYNCINFORESPONSE
 _IDENTIFIER_TYPE.containing_type = _IDENTIFIER;
-DESCRIPTOR.message_types_by_name['PingRequest'] = _PINGREQUEST
+DESCRIPTOR.message_types_by_name['Ping'] = _PING
+DESCRIPTOR.message_types_by_name['ClientInfo'] = _CLIENTINFO
 DESCRIPTOR.message_types_by_name['SubscribeRequest'] = _SUBSCRIBEREQUEST
 DESCRIPTOR.message_types_by_name['UnsubscribeRequest'] = _UNSUBSCRIBEREQUEST
 DESCRIPTOR.message_types_by_name['SyncType'] = _SYNCTYPE
@@ -922,11 +1124,17 @@ DESCRIPTOR.message_types_by_name['PutSyncInfoRequest'] = _PUTSYNCINFOREQUEST
 DESCRIPTOR.message_types_by_name['PutSyncInfoResponse'] = _PUTSYNCINFORESPONSE
 DESCRIPTOR.message_types_by_name['Identifier'] = _IDENTIFIER
 
-class PingRequest(_message.Message):
+class Ping(_message.Message):
   __metaclass__ = _reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _PINGREQUEST
+  DESCRIPTOR = _PING
 
-  # @@protoc_insertion_point(class_scope:zmq_transport.common.PingRequest)
+  # @@protoc_insertion_point(class_scope:zmq_transport.common.Ping)
+
+class ClientInfo(_message.Message):
+  __metaclass__ = _reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _CLIENTINFO
+
+  # @@protoc_insertion_point(class_scope:zmq_transport.common.ClientInfo)
 
 class SubscribeRequest(_message.Message):
   __metaclass__ = _reflection.GeneratedProtocolMessageType

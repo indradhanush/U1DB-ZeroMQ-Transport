@@ -18,7 +18,7 @@ from zmq_transport.config.u1db_settings import (
     TARGET_REPLICA_GEN_KEY,
     TARGET_REPLICA_TRANS_ID_KEY,
     SOURCE_LAST_KNOWN_GEN_KEY,
-    SOURCE_LAST_KNOWN_TRANS_ID
+    SOURCE_LAST_KNOWN_TRANS_ID_KEY
 )
 
 ######################## Start of Protobuf utilities. ########################
@@ -39,6 +39,33 @@ def _create_protobuf_msg(protobuf_type, **kwargs):
     for key, value in kwargs.items():
         setattr(msg_struct, key, value)
     return msg_struct
+
+
+def create_ping_msg():
+    """
+    Creates a zmq_transport.common.message_pb2.Ping message
+    structure.
+
+    :return: Ping message.
+    :rtype: zmq_transport.common.message_pb2.Ping
+    """
+    return _create_protobuf_msg("Ping")
+
+
+def create_client_info_msg(**kwargs):
+    """
+    Creates a zmq_transport.common.message_pb2.ClientInfo message
+    structure.
+
+    :param kwargs: A dictionary containing key value pairs of attributes and
+                   their respective values of ClientInfo message
+                   structure.
+    :type kwargs: dict
+
+    :return: ClientInfo message.
+    :rtype: zmq_transport.common.message_pb2.ClientInfo
+    """
+    return _create_protobuf_msg("ClientInfo", **kwargs)
 
 
 def create_subscribe_request_msg(**kwargs):
@@ -217,6 +244,7 @@ def create_all_sent_response_msg(items=[], **kwargs):
         doc_info = msg_struct.doc_info.add()
         doc_info.doc_id = item[0]
         doc_info.doc_generation = item[1]
+        doc_info.trans_id = item[2]
 
     return msg_struct
 
@@ -372,7 +400,7 @@ def get_source_info():
     """
     info = {}
     info[SOURCE_LAST_KNOWN_GEN_KEY] = 8
-    info[SOURCE_LAST_KNOWN_TRANS_ID] = str(uuid.uuid4())
+    info[SOURCE_LAST_KNOWN_TRANS_ID_KEY] = str(uuid.uuid4())
 
     return info
 
