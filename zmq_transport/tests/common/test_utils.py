@@ -1,3 +1,7 @@
+"""
+Test module for zmq_transport.common.utils
+"""
+
 # System Imports
 import unittest
 
@@ -257,6 +261,7 @@ class DocInfoTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.doc_generation, 2)
         self.assertEqual(parsed_msg_struct.trans_id, "TRANS-ID")
 
+
 class AllSentRequestTest(BaseMessageTest):
 
     def setUp(self):
@@ -360,7 +365,8 @@ class GetDocumentResponseTest(BaseMessageTest):
 
     def setUp(self):
         self.msg_struct = create_get_document_response_msg(
-            doc_id="DOC1", doc_rev="2", doc_generation=1, doc_content="Dummy text.",
+            doc_id="DOC1", doc_rev="2", doc_generation=1,
+            doc_content="Dummy text.",
             target_generation=2, target_trans_id="TAR-ID")
 
     def test_create_get_document_response_msg(self):
@@ -453,3 +459,42 @@ class IdentifierTest(BaseMessageTest):
         self.assertEqual(parsed_msg_struct.type, msg_struct.type)
         self.assertIsInstance(parsed_msg_struct.ping, proto.Ping)
 
+
+class ParseResponseTest(BaseMessageTest):
+    """
+    Tests for zmq_transport.common.parse_response
+    """
+    def setUp(self):
+        self.msg_struct = create_get_sync_info_request_msg(
+            user_id="USER-1", source_replica_uid="UID1", sync_id="SYNC1")
+        self.iden_struct = proto.Identifier(
+            type=proto.Identifier.GET_SYNC_INFO_REQUEST,
+            get_sync_info_request=self.msg_struct)
+        self.msg_str = serialize_msg(self.iden_struct)
+
+    def test_raise_decode_error(self):
+        """
+        Tests to see if parse_response raises DecodeError on passing a
+        response arg other than of type proto.Identifier
+        """
+        with self.assertRaises(TypeError):
+            parsed_msg_struct = parse_response(self.msg_struct,
+                                               "get_sync_info_request")
+
+    def test_parse_response(self):
+        """
+        Tests zmq_transport.common.parse_response
+        """
+        parsed_msg_struct = parse_response(self.msg_str,
+                                           "get_sync_info_request")
+        self.assertIsInstance(parsed_msg_struct, proto.GetSyncInfoRequest)
+
+class GetSyncIdTest(unittest.TestCase):
+    """
+    Tests get_sync_id
+    """
+    def test_return_type_is_string(self):
+        """
+        Tests that the return type is a string.
+        """
+        self.assertIsInstance(get_sync_id(), str)

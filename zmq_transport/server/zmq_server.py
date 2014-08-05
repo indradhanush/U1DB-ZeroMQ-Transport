@@ -32,9 +32,6 @@ from zmq_transport.common.utils import (
     create_get_document_response_msg,
     create_all_sent_response_msg,
     create_client_info_msg,
-    get_target_info,
-    get_source_info,
-    get_doc_info
 )
 from zmq_transport.common.errors import ConnectionIDNotSet
 
