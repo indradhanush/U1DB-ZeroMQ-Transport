@@ -28,6 +28,7 @@ class ZMQBaseSocketTest(unittest.TestCase):
         self.context = zmq.Context()
         self.server_sock = ZMQBaseSocket(self.context.socket(zmq.ROUTER),
                                          self.endpoint)
+        self.server_sock._socket.bind(self.endpoint)
 
     def init_client(self):
         """
@@ -41,7 +42,7 @@ class ZMQBaseSocketTest(unittest.TestCase):
         test_client = ZMQBaseSocket(self.context.socket(zmq.DEALER),
                                     self.endpoint)
         test_client._socket.connect(test_client._endpoint)
-
+        test_client._socket.setsockopt(zmq.LINGER, 0)
         return test_client
 
     def test_run(self):
@@ -62,38 +63,37 @@ class ZMQBaseSocketTest(unittest.TestCase):
         """
         Tests ZMQBaseSocket.register_handler
         """
-        pass
+        with self.assertRaises(TypeError):
+            self.server_sock.register_handler("on_recv", lambda msg: msg)
+        self.server_sock.wrap_zmqstream()
+        self.server_sock.register_handler("on_recv", lambda msg: msg)
 
-    def test_send(self):
+    def test_send_and_recv(self):
         """
-        Tests ZMQBaseSocket.send
+        Tests zmq_transport.common.zmq_base.ZMQBaseComponent.send and
+        zmq_transport.common.zmq_base.ZMQBaseComponent.recv;
+
+        Note: Yes, they should be independent tests, but its essentially
+        the same operations that I would need to do on both the
+        independent tests. Makes no sense in duplicating it again.
         """
         test_client = self.init_client()
-        test_client._socket.setsockopt(zmq.LINGER, 0)
         test_msg = ["Hello", "World"]
-        try:
-            ret = test_client.send(test_msg)
-        except:
-            self.fail("ZMQBaseSocket.send is failing.")
-        finally:
-            test_client.close()
+        self.server_sock._socket.setsockopt(zmq.LINGER, 0)
 
-    # TODO: Find a way to do this.
-    # def test_recv(self):
-    #     test_client = self.init_client()
-    #     test_msg = ["Hello", "World"]
-    #     test_client.send(test_msg)
-
-    #     poller = zmq.Poller()
-    #     poller.register(self.server_sock._socket, zmq.POLLIN)
-    #     self.server_sock._socket.setsockopt(zmq.LINGER, 0)
-    #     while True:
-    #         socks = dict(poller.poll())
-
-    #         if socks.get(self.server_sock._socket) == zmq.POLLIN:
-    #             msg = self.server_sock.recv()
-    #             self.assertEqual(test_msg, msg)
-    #             return
+        with self.assertRaises(TypeError):
+            test_client.send("Not a List")
+        test_client.send(test_msg)
+        poller = zmq.Poller()
+        poller.register(self.server_sock._socket, zmq.POLLIN)
+        while True:
+            socks = dict(poller.poll(1000))
+            if socks.get(self.server_sock._socket) == zmq.POLLIN:
+                msg = self.server_sock.recv()
+                connection_id, msg = msg[0], msg[1:]
+                self.assertEqual(msg, test_msg)
+                break
+        test_client.close()
 
     def test_close(self):
         self.server_sock.close()
