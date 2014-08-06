@@ -99,6 +99,16 @@ class SeenDocsIndex(object):
         self.index[sync_id] = {}
 
     def update_seen_ids(self, sync_id, seen_ids):
+        """
+        Updates the index wrt to a sync_id by adding doc_id and gen as a
+        key value pair.
+
+        :param sync_id: The sync_id to search the index.
+        :type sync_id: str
+        :param seen_ids: A dictionary containing the {doc_id: gen} of all
+                         the docs to be inserted into the index.
+        :type seen_ids: dict
+        """
         if self.index.get(sync_id) is None:
             raise SyncError(
               "No sync information available for sync_id:{0}".format(sync_id))
@@ -118,7 +128,7 @@ class SyncResource(object):
 
     def __init__(self, dbname, source_replica_uid, state):
         """
-        Initiallizes an object of type SyncResource.
+        Initializes an object of type SyncResource.
 
         :param dbname: Name of the database
         :type: str
@@ -193,7 +203,7 @@ class SyncResource(object):
 
     def insert_doc(self, id, rev, content, gen, trans_id):
         """
-        Applciation logic handler to insert a document into the target
+        Application logic handler to insert a document into the target
         sent from source. Invoked when send_doc_info is invoked on the
         source.
         Analogous to u1db.remote.http_app.SyncResource.post_stream_entry()
@@ -270,24 +280,7 @@ class ZMQAppSocket(ZMQBaseSocket):
     """
     Base class for sockets at SOLEDAD. Derived from ZMQBaseSocket.
     """
-    def __init__(self, socket, endpoint):
-        """
-        Initialize a ZMQAppSocket instance.
-
-        :param socket: ZeroMQ socket.
-        :type socket: zmq.Context.socket instance.
-        :param endpoint: Endpoint to bind or connect the socket to.
-        :type endpoint: str
-        """
-        ZMQBaseSocket.__init__(self, socket, endpoint)
-
-    def run(self):
-        """
-        Initiates socket connections. Base class implementations must over
-        ride this method.
-        """
-        raise NotImplementedError(self.run)
-
+    pass
 
 # TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on.
 # See: IRC Log below -
@@ -526,7 +519,8 @@ class ZMQApp(ZMQBaseComponent):
             return None
 
         sync_resource = self._prepare_u1db_sync_resource(
-            get_sync_info_struct.user_id, get_sync_info_struct.source_replica_uid)
+            get_sync_info_struct.user_id,
+            get_sync_info_struct.source_replica_uid)
 
         kwargs = sync_resource.get()
         # TODO: Decide about sending source_replica_uid in

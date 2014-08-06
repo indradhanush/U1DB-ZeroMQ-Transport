@@ -54,7 +54,6 @@ class ServerSocket(ZMQBaseSocket):
     def run(self):
         """
         Initiates the socket by binding to self._endpoint;
-        Recommended: Override in sub-class.
         """
         self._socket.bind(self._endpoint)
 
@@ -78,12 +77,6 @@ class ApplicationHandler(ServerSocket):
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
         self._connection_id = None
 
-    def run(self):
-        """
-        Overrides Serversocket.run() method.
-        """
-        ServerSocket.run(self)
-
     def set_connection_id(self, connection_id, force_update=False):
         """
         Sets the connection_id of the ZMQApp DEALER socket.
@@ -92,7 +85,6 @@ class ApplicationHandler(ServerSocket):
         :type connection_id: str
         :param force_update: Flag to force update connection id.
         """
-
         if not self._connection_id or force_update:
             self._connection_id = connection_id
 
@@ -144,12 +136,6 @@ class ClientHandler(ServerSocket):
         ServerSocket.__init__(self, context.socket(zmq.ROUTER), endpoint)
         self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 
-    def run(self):
-        """
-        Overridden method from ServerSocket base class.
-        """
-        ServerSocket.run(self)
-
 
 class Publisher(ServerSocket):
     """
@@ -167,12 +153,6 @@ class Publisher(ServerSocket):
         :type context: zmq.Context
         """
         ServerSocket.__init__(self, context.socket(zmq.PUB), endpoint)
-
-    def run(self):
-        """
-        Overridden method from ServerSocket base class.
-        """
-        ServerSocket.run(self)
 
 
 class Server(ZMQBaseComponent):

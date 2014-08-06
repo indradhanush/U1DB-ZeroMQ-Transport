@@ -13,7 +13,7 @@ from u1db.errors import (
 from leap.soledad.client.sync import SoledadSynchronizer as Synchronizer
 
 
-# Local Imports
+# Local imports
 from zmq_transport.config.u1db_settings import TARGET_REPLICA_UID_KEY
 
 class ZMQSynchronizer(Synchronizer):

@@ -107,4 +107,3 @@ class ZMQBaseComponent(object):
         This method stops the component and makes for a clean exit.
         """
         raise NotImplementedError(self.stop)
-
