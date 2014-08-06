@@ -11,6 +11,8 @@ except ImportError:
     import json
 
 # Dependencies' imports
+from mock import MagicMock
+import zmq
 import u1db
 from u1db.remote import server_state
 from u1db.backends.sqlite_backend import SQLiteSyncTarget
@@ -20,11 +22,13 @@ from leap.soledad.common import USER_DB_PREFIX
 from zmq_transport.app.zmq_app import (
     return_list,
     SeenDocsIndex,
-    SyncResource
+    SyncResource,
+    ServerHandler
 )
 from zmq_transport.config.settings import (
     DATABASE_ROOT,
-    DATABASE_EXTENSION
+    DATABASE_EXTENSION,
+    ENDPOINT_APPLICATION_HANDLER
 )
 from zmq_transport.config.u1db_settings import (
     TARGET_REPLICA_UID_KEY,
@@ -207,6 +211,41 @@ class SyncResourceTest(BaseApplicationTest):
         del self.source_replica_uid
         del self.dbname
         del self.sync_resource
+
+
+class ServerHandlerTest(BaseApplicationTest):
+    """
+    Test suite for zmq_transport.app.zmq_app.ServerHandler
+    """
+    def setUp(self):
+        self.context = zmq.Context()
+
+    def test___init__(self):
+        """
+        Tests ServerHandler.__init__
+        """
+        # Mock is sexy, but a little difficult at the moment.
+        ServerHandler.__init__ = MagicMock(return_value=None)
+        server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
+                                       self.context)
+        ServerHandler.__init__.assert_called_once_with(
+            ENDPOINT_APPLICATION_HANDLER, self.context)
+
+    def test_run(self):
+        """
+        Tests ServerHandler.run
+        """
+        import pdb
+
+        ServerHandler.run = MagicMock(return_value=None)
+        server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
+                                       self.context)
+        ServerHandler.run.assert_called_once()
+
+    def tearDown(self):
+        self.context.term()
+
+
 
 # class ApplicationTest(BaseApplicationTest):
 
