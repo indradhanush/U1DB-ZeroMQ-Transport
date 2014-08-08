@@ -437,7 +437,8 @@ class PutSyncInfoResponseTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         serialized_str = serialize_msg(self.msg_struct)
-        parsed_msg_struct = deserialize_msg("PutSyncInfoResponse", serialized_str)
+        parsed_msg_struct = deserialize_msg("PutSyncInfoResponse",
+                                            serialized_str)
         self.assertIsInstance(parsed_msg_struct, proto.PutSyncInfoResponse)
         self.assertEqual(parsed_msg_struct.source_transaction_id, "TRANS-ID")
         self.assertEqual(parsed_msg_struct.inserted, True)
@@ -447,8 +448,7 @@ class IdentifierTest(BaseMessageTest):
 
     def test_serialize_msg(self):
         ping = create_ping_msg()
-        msg_struct = proto.Identifier(type=proto.Identifier.PING,
-                                      ping=ping)
+        msg_struct = proto.Identifier(type=proto.Identifier.PING, ping=ping)
         self.assertIsInstance(msg_struct, proto.Identifier)
         self.assertEqual(msg_struct.type, proto.Identifier.PING)
         self.assertIsInstance(msg_struct.ping, proto.Ping)

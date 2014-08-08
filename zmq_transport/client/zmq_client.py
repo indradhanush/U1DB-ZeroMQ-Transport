@@ -26,7 +26,6 @@ class ClientSocket(ZMQBaseSocket):
         :param endpoint: Endpoint of socket to which it will connect or bind.
         :type endpoint: str
         """
-
         ZMQBaseSocket.__init__(self, socket, endpoint)
         # self._socket.setsockopt(zmq.RCVTIMEO, 1000)
 

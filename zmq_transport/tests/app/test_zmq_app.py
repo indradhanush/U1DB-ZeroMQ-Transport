@@ -46,6 +46,7 @@ from zmq_transport.config.u1db_settings import (
 )
 from zmq_transport.common.errors import SyncError
 from zmq_transport.common.utils import (
+    create_ping_msg,
     create_get_sync_info_request_msg,
     create_send_document_request_msg,
     create_all_sent_request_msg,
@@ -330,7 +331,17 @@ class ZMQAppTest(BaseApplicationTest):
         self.assertIsInstance(self.zmq_app.server_handler._socket, ZMQStream)
 
     def test__ping(self):
-        pass
+        """
+        Tests ZMQApp._ping
+        """
+        ping_struct = create_ping_msg()
+        iden_ping_struct = proto.Identifier(type=proto.Identifier.PING,
+                                            ping=ping_struct)
+        str_iden_ping = serialize_msg(iden_ping_struct)
+        with patch.object(self.zmq_app.server_handler, "send") as mock_send:
+            self.zmq_app._ping()
+            self.zmq_app.server_handler.send.assert_called_once_with(
+                [str_iden_ping])
 
     def test__prepare_u1b_sync_resource(self):
         """

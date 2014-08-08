@@ -43,7 +43,3 @@ if __name__ == "__main__":
     start = time.time()
     create_and_write("user-USER-1.u1db",  target_path)
     print time.time() - start
-
-
-
-
