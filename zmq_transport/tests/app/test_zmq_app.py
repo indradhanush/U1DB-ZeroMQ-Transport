@@ -11,8 +11,13 @@ except ImportError:
     import json
 
 # Dependencies' imports
-from mock import MagicMock
+from mock import (
+    MagicMock,
+    patch
+)
 import zmq
+from zmq.eventloop.zmqstream import ZMQStream
+from zmq.eventloop.ioloop import IOLoop
 import u1db
 from u1db.remote import server_state
 from u1db.backends.sqlite_backend import SQLiteSyncTarget
@@ -23,7 +28,8 @@ from zmq_transport.app.zmq_app import (
     return_list,
     SeenDocsIndex,
     SyncResource,
-    ServerHandler
+    ServerHandler,
+    ZMQApp
 )
 from zmq_transport.config.settings import (
     DATABASE_ROOT,
@@ -39,8 +45,61 @@ from zmq_transport.config.u1db_settings import (
     SOURCE_LAST_KNOWN_TRANS_ID_KEY
 )
 from zmq_transport.common.errors import SyncError
+from zmq_transport.common.utils import (
+    create_get_sync_info_request_msg,
+    create_send_document_request_msg,
+    create_all_sent_request_msg,
+    create_get_document_request_msg,
+    create_put_sync_info_request_msg,
+    get_sync_id,
+    serialize_msg
+)
+from zmq_transport.common import message_pb2 as proto
 from zmq_transport.u1db.sync import SyncExchange
 
+
+# Test stubs setup.
+def init_server_state(cls=None):
+    """
+    Helper method to initiate a server_state.ServerState instance.
+
+    :param cls: A class instance. Default is None. If it is set to None,
+                then init_server_state returns a server_state.ServerState
+                instance.
+    :type cls: type
+
+    :rtype: None if cls == None, else server_state.ServerState
+    """
+    state = server_state.ServerState()
+    state.set_workingdir(DATABASE_ROOT)
+    if cls:
+        cls.state = state
+    else:
+        return state
+
+def open_source_db(cls=None, create=True):
+    """
+    Helper method to open the database representing the source replica.
+
+    :param cls: A class instance. Default is None. If it is set to None,
+                then init_server_state returns a server_state.ServerState
+                instance.
+    :type cls: type
+    :param create: A flag to indicate that the source database will be
+                   created or not.
+    :type create: bool
+
+    :return: None or (Database instance and source_replica_uid)
+    :rtype: None/tuple
+    """
+    source = u1db.open((os.path.join(DATABASE_ROOT,
+                                  "source-USER-1.u1db")), create=create)
+    source_replica_uid = source._get_replica_uid()
+    if cls:
+        cls.source = source
+        cls.source_replica_uid = source_replica_uid
+    else:
+        return source, source_replica_uid
 
 class BaseApplicationTest(unittest.TestCase):
     """
@@ -109,13 +168,8 @@ class SyncResourceTest(BaseApplicationTest):
     Test suite for zmq_app.SyncResource
     """
     def setUp(self):
-        import pdb
-
-        self.state = server_state.ServerState()
-        self.state.set_workingdir(DATABASE_ROOT)
-        self.source = u1db.open((os.path.join(DATABASE_ROOT,
-                                  "source-USER-1.u1db")), create=True)
-        self.source_replica_uid = self.source._get_replica_uid()
+        init_server_state(self)
+        open_source_db(self)
         self.dbname = "{0}USER-1{1}".format(USER_DB_PREFIX, DATABASE_EXTENSION)
         self.sync_resource = SyncResource(self.dbname, self.source_replica_uid,
                                           self.state)
@@ -207,7 +261,7 @@ class SyncResourceTest(BaseApplicationTest):
 
     def tearDown(self):
         del self.state
-        del self.source
+        self.source.close()
         del self.source_replica_uid
         del self.dbname
         del self.sync_resource
@@ -224,34 +278,469 @@ class ServerHandlerTest(BaseApplicationTest):
         """
         Tests ServerHandler.__init__
         """
-        # Mock is sexy, but a little difficult at the moment.
-        ServerHandler.__init__ = MagicMock(return_value=None)
-        server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
-                                       self.context)
-        ServerHandler.__init__.assert_called_once_with(
-            ENDPOINT_APPLICATION_HANDLER, self.context)
+        # Mock is sexy, but a little difficult to implement sometimes.
+        with patch.object(ServerHandler, "__init__") as mock_init:
+            mock_init.return_value = None
+            server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
+                                           self.context)
+            mock_init.assert_called_once_with(
+                ENDPOINT_APPLICATION_HANDLER, self.context)
 
     def test_run(self):
         """
         Tests ServerHandler.run
         """
-        import pdb
-
-        ServerHandler.run = MagicMock(return_value=None)
-        server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
-                                       self.context)
-        ServerHandler.run.assert_called_once()
+        with patch.object(ServerHandler, "run") as mock_run:
+            mock_run.return_value = None
+            server_handler = ServerHandler(ENDPOINT_APPLICATION_HANDLER,
+                                           self.context)
+            server_handler.run(ENDPOINT_APPLICATION_HANDLER)
+            server_handler.run.assert_called_once_with(
+                ENDPOINT_APPLICATION_HANDLER)
 
     def tearDown(self):
-        self.context.term()
+        self.context.destroy()
 
 
+class ZMQAppTest(BaseApplicationTest):
+    """
+    Test suite for zmq_transport.app.zmq_app.ZMQApp
+    """
+    def setUp(self):
+        init_server_state(self)
+        self.zmq_app = ZMQApp(self.state)
 
-# class ApplicationTest(BaseApplicationTest):
+    def test___init__(self):
+        """
+        Tests ZMQApp.__init__
+        """
+        self.assertIsInstance(self.zmq_app._context, zmq.Context)
+        self.assertEqual(self.zmq_app._loop, None)
+        self.assertEqual(self.zmq_app.dataset, [])
+        self.assertIsInstance(self.zmq_app._state, server_state.ServerState)
+        self.assertIsInstance(self.zmq_app.server_handler, ServerHandler)
+        self.assertIsInstance(self.zmq_app.seen_docs_index, SeenDocsIndex)
 
-#     def setUp(self):
-#         self.application = Application(ENDPOINT_APPLICATION_HANDLER)
+    def test__prepare_reactor(self):
+        """
+        Tests ZMQApp._prepare_reactor
+        """
+        self.zmq_app._prepare_reactor()
+        self.assertIsInstance(self.zmq_app._loop, IOLoop)
+        self.assertIsInstance(self.zmq_app.server_handler._socket, ZMQStream)
 
-#     def test_application_init(self):
-#         self.assertIsInstance(self.application, Application,
-#                               "Instance is not of type Application.")
+    def test__ping(self):
+        pass
+
+    def test__prepare_u1b_sync_resource(self):
+        """
+        Tests ZMQApp._prepare_u1db_sync_resource
+        """
+        source, source_replica_uid = open_source_db()
+        source_replica_uid = source._get_replica_uid()
+        sync_resource = self.zmq_app._prepare_u1db_sync_resource(
+            "USER-1", source_replica_uid)
+        self.assertIsInstance(sync_resource, SyncResource)
+
+    def test__handle_snd_update(self):
+        """
+        Tests ZMQApp.handle_snd_update
+        """
+        ret = self.zmq_app.handle_snd_update(["Hello"], None)
+        #TODO: This test is meaningless now. Will be done once
+        #ZMQApp.handle_snd_update does something meanigful.
+        self.assertIsNone(ret)
+
+    def test_handle_rcv_update(self):
+        """
+        Tests ZMQApp.handle_rcv_update
+        """
+        source, source_replica_uid = open_source_db()
+        msg = create_get_sync_info_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=get_sync_id()
+        )
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.GET_SYNC_INFO_REQUEST,
+            get_sync_info_request=msg)
+        dummy_client_info = "client 1"
+        iden_str = serialize_msg(iden_struct)
+        self.zmq_app.server_handler.send = MagicMock(return_value=None)
+        with patch.object(self.zmq_app.server_handler, "send") as mock_send:
+            response = self.zmq_app.handle_rcv_update(
+                [dummy_client_info, iden_str])
+            mock_send.assert_called_once()
+
+    def test_identify_msg_with_get_sync_info_request(self):
+        """
+        Tests ZMQApp.identify_msg for messsage type GetSyncInfoRequest
+        """
+        source, source_replica_uid = open_source_db()
+
+        msg = create_get_sync_info_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=get_sync_id())
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.GET_SYNC_INFO_REQUEST,
+            get_sync_info_request=msg)
+        ret = self.zmq_app.identify_msg(iden_struct)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.GET_SYNC_INFO_RESPONSE)
+        self.assertIsInstance(ret.get_sync_info_response,
+                              proto.GetSyncInfoResponse)
+
+    def test_identify_msg_with_send_document_request(self):
+        """
+        Tests ZMQApp.identify_msg for message type SendDocumentRequest
+        """
+        source, source_replica_uid = open_source_db()
+        doc = source.create_doc({"data": "hello world"})
+        gen = source._get_generation()
+        trans_id = source._get_trans_id_for_gen(gen)
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        msg = create_send_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
+            doc_generation=1, doc_content=json.dumps(doc.content),
+            source_generation=gen, source_transaction_id=trans_id,
+            target_last_known_generation=0, target_last_known_trans_id="")
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.SEND_DOCUMENT_REQUEST,
+            send_document_request=msg)
+        ret = self.zmq_app.identify_msg(iden_struct)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.SEND_DOCUMENT_RESPONSE)
+        self.assertIsInstance(ret.send_document_response,
+                              proto.SendDocumentResponse)
+
+    def test_identify_msg_with_all_sent_request(self):
+        """
+        Tests ZMQApp.identify_msg for message type AllSentResponse
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        msg = create_all_sent_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, total_docs_sent=0,
+            all_sent=True, target_last_known_generation=0,
+            target_last_known_trans_id="")
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.ALL_SENT_REQUEST,
+            all_sent_request=msg)
+        ret = self.zmq_app.identify_msg(iden_struct)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.ALL_SENT_RESPONSE)
+        self.assertIsInstance(ret.all_sent_response, proto.AllSentResponse)
+
+    def test_identify_msg_with_get_doc_request(self):
+        """
+        Tests ZMQApp.identify_msg for message type GetDocumentRequest
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        sync_resource = self.zmq_app._prepare_u1db_sync_resource(
+            "USER-1", source_replica_uid)
+        sync_resource.prepare_for_sync_exchange(0, "")
+        doc = sync_resource.sync_exch._db.create_doc({"data": "hello world!"})
+        docs_by_gen, _, _ = sync_resource.return_changed_docs()
+
+        _, gen, trans_id = docs_by_gen[-1]
+
+        msg = create_get_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_generation=gen,
+            trans_id=trans_id,docs_received_count=0,
+            target_last_known_generation=0,
+            target_last_known_trans_id="")
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.GET_DOCUMENT_REQUEST,
+            get_document_request=msg)
+
+        ret = self.zmq_app.identify_msg(iden_struct)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.GET_DOCUMENT_RESPONSE)
+        self.assertIsInstance(ret.get_document_response,
+                              proto.GetDocumentResponse)
+
+    def test_identify_msg_with_put_sync_info_request(self):
+        """
+        Tests ZMQApp.identify_msg for message type PutSyncInfoRequest
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        msg = create_put_sync_info_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, source_replica_generation=0,
+            source_transaction_id="", target_last_known_generation=0,
+            target_last_known_trans_id="")
+        iden_struct = proto.Identifier(
+            type=proto.Identifier.PUT_SYNC_INFO_REQUEST,
+            put_sync_info_request=msg)
+
+        ret = self.zmq_app.identify_msg(iden_struct)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.PUT_SYNC_INFO_RESPONSE)
+        self.assertIsInstance(ret.put_sync_info_response,
+                              proto.PutSyncInfoResponse)
+
+    def test_handle_get_sync_info_request(self):
+        """
+        Tests ZMQApp.handle_get_sync_info_request
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        msg = create_get_sync_info_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id)
+
+        ret = self.zmq_app.handle_get_sync_info_request(msg)
+        self.assertEqual(ret, None)
+
+        # Reset Index
+        self.zmq_app.seen_docs_index.index = {}
+
+        ret = self.zmq_app.handle_get_sync_info_request(msg)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.GET_SYNC_INFO_RESPONSE)
+        self.assertIsInstance(ret.get_sync_info_response,
+                              proto.GetSyncInfoResponse)
+
+    def test_handle_send_doc_request(self):
+        """
+        Tests ZMQApp.handle_send_doc_request
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        doc = source.create_doc({"data": "hello world"})
+        gen = source._get_generation()
+        trans_id = source._get_trans_id_for_gen(gen)
+
+        # Testing for InvalidGeneration
+        msg = create_send_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
+            doc_generation=1, doc_content=json.dumps(doc.content),
+            source_generation=gen, source_transaction_id=trans_id,
+            target_last_known_generation=-1,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_send_doc_request(msg)
+        self.assertEqual(ret, None)
+
+        # Testing for InvalidTransactionId
+        msg = create_send_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
+            doc_generation=1, doc_content=json.dumps(doc.content),
+            source_generation=gen, source_transaction_id=trans_id,
+            target_last_known_generation=1,
+            target_last_known_trans_id="Invalid trans_id")
+
+        ret = self.zmq_app.handle_send_doc_request(msg)
+        self.assertEqual(ret, None)
+
+        # Testing for the case when the insert_doc operation fails.
+        msg = create_send_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
+            doc_generation=1, doc_content="Test data",
+            source_generation=gen, source_transaction_id=trans_id,
+            target_last_known_generation=0,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_send_doc_request(msg)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.SEND_DOCUMENT_RESPONSE)
+        self.assertIsInstance(ret.send_document_response,
+                              proto.SendDocumentResponse)
+        self.assertEqual(ret.send_document_response.inserted, False)
+
+        # Testing for the case when a SyncError is raised while
+        # updating the seen_docs_index after a successful insertion.
+        # TODO: Note: Probably this use case should come before inserting
+        # the doc to detect an out of session document. Also, the
+        # index should be re-updated to confirm that this doc was
+        # actually seen.
+        self.zmq_app.seen_docs_index.index.pop(sync_id)
+
+        msg = create_send_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
+            doc_generation=1, doc_content=json.dumps(doc.content),
+            source_generation=gen, source_transaction_id=trans_id,
+            target_last_known_generation=0,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_send_doc_request(msg)
+        self.assertEqual(ret, None)
+
+    def test_handle_all_sent_request(self):
+        """
+        Tests ZMQApp.handle_all_sent_request
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        # Testing for InvalidGeneration
+        msg = create_all_sent_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, total_docs_sent=0,
+            all_sent=True, target_last_known_generation=-1,
+            target_last_known_trans_id="")
+        ret = self.zmq_app.handle_all_sent_request(msg)
+        self.assertEqual(ret, None)
+
+        # Testing for InvalidTransactionId
+        msg = create_all_sent_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, total_docs_sent=0,
+            all_sent=True, target_last_known_generation=1,
+            target_last_known_trans_id="Invalid transaction_id.")
+
+        ret = self.zmq_app.handle_all_sent_request(msg)
+        self.assertEqual(ret, None)
+
+        msg = create_all_sent_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, total_docs_sent=0,
+            all_sent=True, target_last_known_generation=0,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_all_sent_request(msg)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.ALL_SENT_RESPONSE)
+        self.assertIsInstance(ret.all_sent_response, proto.AllSentResponse)
+
+    def test_handle_get_doc_request(self):
+        """
+        Tests ZMQApp.handle_get_document_request
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        sync_resource = self.zmq_app._prepare_u1db_sync_resource(
+            "USER-1", source_replica_uid)
+        sync_resource.prepare_for_sync_exchange(0, "")
+        doc = sync_resource.sync_exch._db.create_doc({"data": "hello world!"})
+        docs_by_gen, _, _ = sync_resource.return_changed_docs()
+        _, gen, trans_id = docs_by_gen[-1]
+
+        msg = create_get_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_generation=gen,
+            trans_id=trans_id,docs_received_count=0,
+            target_last_known_generation=-1,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_get_doc_request(msg)
+        self.assertEqual(ret, None)
+
+        msg = create_get_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_generation=gen,
+            trans_id=trans_id,docs_received_count=0,
+            target_last_known_generation=1,
+            target_last_known_trans_id="Invalid transaction_id")
+
+        ret = self.zmq_app.handle_get_doc_request(msg)
+        self.assertEqual(ret, None)
+
+
+        msg = create_get_document_request_msg(
+            user_id="USER-1", source_replica_uid=source_replica_uid,
+            sync_id=sync_id, doc_id=doc.doc_id, doc_generation=gen,
+            trans_id=trans_id,docs_received_count=0,
+            target_last_known_generation=0,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_get_doc_request(msg)
+        self.assertIsInstance(ret, list)
+        ret = ret[0]
+        self.assertIsInstance(ret, proto.Identifier)
+        self.assertEqual(ret.type, proto.Identifier.GET_DOCUMENT_RESPONSE)
+        self.assertIsInstance(ret.get_document_response,
+                              proto.GetDocumentResponse)
+
+    def test_handle_put_sync_info_request(self):
+        """
+        Tests ZMQApp.handle_put_sync_info_request
+        """
+        source, source_replica_uid = open_source_db()
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+
+        msg = create_put_sync_info_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, source_replica_generation=0,
+            source_transaction_id="", target_last_known_generation=-1,
+            target_last_known_trans_id="")
+
+        ret = self.zmq_app.handle_put_sync_info_request(msg)
+        self.assertEqual(ret, None)
+
+        msg = create_put_sync_info_request_msg(
+            user_id="USER-1", sync_id=sync_id,
+            source_replica_uid=source_replica_uid, source_replica_generation=0,
+            source_transaction_id="", target_last_known_generation=1,
+            target_last_known_trans_id="Invalid transaction_id.")
+
+        ret = self.zmq_app.handle_put_sync_info_request(msg)
+        self.assertEqual(ret, None)
+
+    def test_stop(self):
+        """
+        Tests ZMQApp.stop
+        """
+        #TODO: Need some ideas on how to test this.
+        pass
+
+    def tearDown(self):
+        del self.zmq_app

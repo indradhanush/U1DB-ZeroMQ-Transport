@@ -10,7 +10,10 @@ import pdb
 import zmq
 from zmq.eventloop.ioloop import IOLoop
 from u1db.remote import server_state
-from u1db.errors import InvalidTransactionId
+from u1db.errors import (
+    InvalidGeneration,
+    InvalidTransactionId
+)
 from u1db import Document
 from google.protobuf.message import DecodeError
 from leap.soledad.common import USER_DB_PREFIX
@@ -544,9 +547,13 @@ class ZMQApp(ZMQBaseComponent):
 
         try:
             sync_resource.prepare_for_sync_exchange(
-                last_known_generation=send_doc_req_struct.target_last_known_generation,
-                last_known_trans_id=send_doc_req_struct.target_last_known_trans_id)
-
+                send_doc_req_struct.target_last_known_generation,
+                send_doc_req_struct.target_last_known_trans_id
+            )
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -599,6 +606,10 @@ class ZMQApp(ZMQBaseComponent):
                     all_sent_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     all_sent_req_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -641,6 +652,10 @@ class ZMQApp(ZMQBaseComponent):
                     get_doc_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     get_doc_req_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -668,8 +683,6 @@ class ZMQApp(ZMQBaseComponent):
         :return: PutSyncInfoResponse message wrapped in an Identifier message.
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
-        # TODO: Do some db transaction here.
-
         sync_resource = self._prepare_u1db_sync_resource(
             put_sync_info_struct.user_id,
             put_sync_info_struct.source_replica_uid)
@@ -678,6 +691,10 @@ class ZMQApp(ZMQBaseComponent):
             sync_resource.prepare_for_sync_exchange(
                 put_sync_info_struct.target_last_known_generation,
                 put_sync_info_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
