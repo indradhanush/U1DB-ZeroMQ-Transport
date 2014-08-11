@@ -103,7 +103,7 @@ class SeenDocsIndex(object):
 
     def update_seen_ids(self, sync_id, seen_ids):
         """
-        Updates the index wrt to a sync_id by adding doc_id and gen as a
+        Updates the index[sync_id] by adding doc_id and gen as a
         key value pair.
 
         :param sync_id: The sync_id to search the index.

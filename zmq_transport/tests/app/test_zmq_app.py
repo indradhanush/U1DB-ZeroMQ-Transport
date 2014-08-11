@@ -102,12 +102,12 @@ def open_source_db(cls=None, create=True):
     else:
         return source, source_replica_uid
 
+
 class BaseApplicationTest(unittest.TestCase):
     """
     Base test class for zmq_transport.app.zmq_app tests.
     """
     pass
-
 
 class ReturnListTest(BaseApplicationTest):
     """
@@ -157,7 +157,9 @@ class SeenDocsIndexTest(BaseApplicationTest):
             self.seen_docs.update_seen_ids(self.sync_id, seen_ids)
 
         self.seen_docs.add_sync_id(self.sync_id)
+        self.assertEqual(self.seen_docs.index.get(self.sync_id), {})
         self.seen_docs.update_seen_ids(self.sync_id, seen_ids)
+        self.assertEqual(self.seen_docs.index.get(self.sync_id), seen_ids)
 
     def tearDown(self):
         del self.seen_docs
@@ -307,6 +309,22 @@ class ZMQAppTest(BaseApplicationTest):
     """
     Test suite for zmq_transport.app.zmq_app.ZMQApp
     """
+    def setup_stub_sync_environment(self, cls=None, create=True):
+        """
+        Helper method to set up test stubs to simulate sync environment
+        plus set up source replica.
+        """
+        if cls:
+            open_source_db(cls, create)
+            source, source_replica_uid = None, None
+        else:
+            source, source_replica_uid = open_source_db(cls, create)
+
+        # Simulate that a sync is already in session.
+        sync_id = get_sync_id()
+        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        return source, source_replica_uid, sync_id
+
     def setUp(self):
         init_server_state(self)
         self.zmq_app = ZMQApp(self.state)
@@ -406,14 +424,11 @@ class ZMQAppTest(BaseApplicationTest):
         """
         Tests ZMQApp.identify_msg for message type SendDocumentRequest
         """
-        source, source_replica_uid = open_source_db()
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
         doc = source.create_doc({"data": "hello world"})
         gen = source._get_generation()
         trans_id = source._get_trans_id_for_gen(gen)
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
 
         msg = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
@@ -436,11 +451,7 @@ class ZMQAppTest(BaseApplicationTest):
         """
         Tests ZMQApp.identify_msg for message type AllSentResponse
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_all_sent_request_msg(
             user_id="USER-1", sync_id=sync_id,
@@ -461,11 +472,7 @@ class ZMQAppTest(BaseApplicationTest):
         """
         Tests ZMQApp.identify_msg for message type GetDocumentRequest
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         sync_resource = self.zmq_app._prepare_u1db_sync_resource(
             "USER-1", source_replica_uid)
@@ -497,11 +504,7 @@ class ZMQAppTest(BaseApplicationTest):
         """
         Tests ZMQApp.identify_msg for message type PutSyncInfoRequest
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_put_sync_info_request_msg(
             user_id="USER-1", sync_id=sync_id,
@@ -524,11 +527,7 @@ class ZMQAppTest(BaseApplicationTest):
         """
         Tests ZMQApp.handle_get_sync_info_request
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_get_sync_info_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
@@ -548,21 +547,16 @@ class ZMQAppTest(BaseApplicationTest):
         self.assertIsInstance(ret.get_sync_info_response,
                               proto.GetSyncInfoResponse)
 
-    def test_handle_send_doc_request(self):
+    def test_handle_send_doc_request_invalid_generation(self):
         """
-        Tests ZMQApp.handle_send_doc_request
+        Tests ZMQApp.handle_send_doc_request with an invalid generation.
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         doc = source.create_doc({"data": "hello world"})
         gen = source._get_generation()
         trans_id = source._get_trans_id_for_gen(gen)
 
-        # Testing for InvalidGeneration
         msg = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
             sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
@@ -574,7 +568,17 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_send_doc_request(msg)
         self.assertEqual(ret, None)
 
-        # Testing for InvalidTransactionId
+    def test_handle_send_doc_request_invalid_transaction_id(self):
+        """
+        Tests ZMQApp.handle_send_doc_request with an invalid
+        transaction_id.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
+        doc = source.create_doc({"data": "hello world"})
+        gen = source._get_generation()
+        trans_id = source._get_trans_id_for_gen(gen)
+
         msg = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
             sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
@@ -586,7 +590,17 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_send_doc_request(msg)
         self.assertEqual(ret, None)
 
-        # Testing for the case when the insert_doc operation fails.
+    def test_handle_send_doc_request_insert_doc_fails(self):
+        """
+        Tests ZMQApp.handle_send_doc_request when an insert document
+        operation fails.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
+        doc = source.create_doc({"data": "hello world"})
+        gen = source._get_generation()
+        trans_id = source._get_trans_id_for_gen(gen)
+
         msg = create_send_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
             sync_id=sync_id, doc_id=doc.doc_id, doc_rev=doc.rev,
@@ -604,12 +618,24 @@ class ZMQAppTest(BaseApplicationTest):
                               proto.SendDocumentResponse)
         self.assertEqual(ret.send_document_response.inserted, False)
 
+
+    def test_handle_send_doc_request_sync_error(self):
+        """
+        Tests ZMQApp.handle_send_doc_request when a SyncError is raised.
+        """
         # Testing for the case when a SyncError is raised while
         # updating the seen_docs_index after a successful insertion.
+
         # TODO: Note: Probably this use case should come before inserting
         # the doc to detect an out of session document. Also, the
         # index should be re-updated to confirm that this doc was
         # actually seen.
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
+        doc = source.create_doc({"data": "hello world"})
+        gen = source._get_generation()
+        trans_id = source._get_trans_id_for_gen(gen)
+
         self.zmq_app.seen_docs_index.index.pop(sync_id)
 
         msg = create_send_document_request_msg(
@@ -623,17 +649,12 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_send_doc_request(msg)
         self.assertEqual(ret, None)
 
-    def test_handle_all_sent_request(self):
+    def test_handle_all_sent_request_invalid_generation(self):
         """
-        Tests ZMQApp.handle_all_sent_request
+        Tests ZMQApp.handle_all_sent_request with an invalid generation.
         """
-        source, source_replica_uid = open_source_db()
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
-
-        # Testing for InvalidGeneration
         msg = create_all_sent_request_msg(
             user_id="USER-1", sync_id=sync_id,
             source_replica_uid=source_replica_uid, total_docs_sent=0,
@@ -642,7 +663,13 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_all_sent_request(msg)
         self.assertEqual(ret, None)
 
-        # Testing for InvalidTransactionId
+    def test_handle_all_sent_request_invalid_transaction_id(self):
+        """
+        Tests ZMQApp.handle_all_sent_request with an invalid
+        transaction_id.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
         msg = create_all_sent_request_msg(
             user_id="USER-1", sync_id=sync_id,
             source_replica_uid=source_replica_uid, total_docs_sent=0,
@@ -651,6 +678,12 @@ class ZMQAppTest(BaseApplicationTest):
 
         ret = self.zmq_app.handle_all_sent_request(msg)
         self.assertEqual(ret, None)
+
+    def test_handle_all_sent_request_success(self):
+        """
+        Tests ZMQApp.handle_all_sent_request for success.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_all_sent_request_msg(
             user_id="USER-1", sync_id=sync_id,
@@ -665,15 +698,12 @@ class ZMQAppTest(BaseApplicationTest):
         self.assertEqual(ret.type, proto.Identifier.ALL_SENT_RESPONSE)
         self.assertIsInstance(ret.all_sent_response, proto.AllSentResponse)
 
-    def test_handle_get_doc_request(self):
+    def test_handle_get_doc_request_invalid_generation(self):
         """
-        Tests ZMQApp.handle_get_document_request
+        Tests ZMQApp.handle_get_document_request with an invalid
+        generation.
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         sync_resource = self.zmq_app._prepare_u1db_sync_resource(
             "USER-1", source_replica_uid)
@@ -692,6 +722,20 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_get_doc_request(msg)
         self.assertEqual(ret, None)
 
+    def test_handle_get_doc_request_invalid_transaction_id(self):
+        """
+        Tests ZMQApp.handle_get_document_request with an invalid
+        transaction_id.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
+        sync_resource = self.zmq_app._prepare_u1db_sync_resource(
+            "USER-1", source_replica_uid)
+        sync_resource.prepare_for_sync_exchange(0, "")
+        doc = sync_resource.sync_exch._db.create_doc({"data": "hello world!"})
+        docs_by_gen, _, _ = sync_resource.return_changed_docs()
+        _, gen, trans_id = docs_by_gen[-1]
+
         msg = create_get_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
             sync_id=sync_id, doc_id=doc.doc_id, doc_generation=gen,
@@ -702,6 +746,18 @@ class ZMQAppTest(BaseApplicationTest):
         ret = self.zmq_app.handle_get_doc_request(msg)
         self.assertEqual(ret, None)
 
+    def test_handle_get_doc_request_success(self):
+        """
+        Tests ZMQApp.handle_get_document_request for success.
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
+
+        sync_resource = self.zmq_app._prepare_u1db_sync_resource(
+            "USER-1", source_replica_uid)
+        sync_resource.prepare_for_sync_exchange(0, "")
+        doc = sync_resource.sync_exch._db.create_doc({"data": "hello world!"})
+        docs_by_gen, _, _ = sync_resource.return_changed_docs()
+        _, gen, trans_id = docs_by_gen[-1]
 
         msg = create_get_document_request_msg(
             user_id="USER-1", source_replica_uid=source_replica_uid,
@@ -718,15 +774,11 @@ class ZMQAppTest(BaseApplicationTest):
         self.assertIsInstance(ret.get_document_response,
                               proto.GetDocumentResponse)
 
-    def test_handle_put_sync_info_request(self):
+    def test_handle_put_sync_info_request_invalid_generation(self):
         """
         Tests ZMQApp.handle_put_sync_info_request
         """
-        source, source_replica_uid = open_source_db()
-
-        # Simulate that a sync is already in session.
-        sync_id = get_sync_id()
-        self.zmq_app.seen_docs_index.add_sync_id(sync_id)
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_put_sync_info_request_msg(
             user_id="USER-1", sync_id=sync_id,
@@ -736,6 +788,12 @@ class ZMQAppTest(BaseApplicationTest):
 
         ret = self.zmq_app.handle_put_sync_info_request(msg)
         self.assertEqual(ret, None)
+
+    def test_handle_put_sync_info_request_invalid_transaction_id(self):
+        """
+        Tests ZMQApp.handle_put_sync_info_request
+        """
+        source, source_replica_uid, sync_id = self.setup_stub_sync_environment()
 
         msg = create_put_sync_info_request_msg(
             user_id="USER-1", sync_id=sync_id,

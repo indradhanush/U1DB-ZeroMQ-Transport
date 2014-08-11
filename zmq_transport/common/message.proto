@@ -195,7 +195,7 @@ message PutSyncInfoResponse {
 
 // A Identifier message is a message that identifies the type of messages being
 // sent and also contains the message itself.
-message IdenTifier {
+message Identifier {
     enum Type {
         PING = 1;
         SUBSCRIBE_REQUEST = 2;

@@ -1,9 +1,16 @@
+"""
+Script to benchmark the reference impelementation.
+"""
+# System imports
 import os
 import time
 
+# Dependencies' imports
 import u1db
 
+# Local imports
 from reset_env import BASE_DB_PATH
+
 
 if __name__ == "__main__":
     source_db = u1db.open(os.path.join(BASE_DB_PATH, "source-USER-1.u1db"),

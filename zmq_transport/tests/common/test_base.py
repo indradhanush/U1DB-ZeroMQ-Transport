@@ -45,7 +45,7 @@ class ZMQBaseSocketTest(unittest.TestCase):
         test_client._socket.setsockopt(zmq.LINGER, 0)
         return test_client
 
-    def test_run(self):
+    def test_run_raises_not_implemented_error(self):
         """
         Tests ZMQBaseSocket.run
         """
