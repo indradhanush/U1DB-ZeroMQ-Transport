@@ -96,13 +96,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         """
         Overridden from zmq_transport.client.zmq_client.ZMQClientBase
         """
-        try:
-            self.check_user_id()
-        except UserIDNotSet, e:
-            print "Aborting:", e
-            sys.exit()
-        else:
-            self.speaker.run()
+        self.check_user_id()
+        self.speaker.run()
 
     @staticmethod
     def connect(endpoints):
@@ -114,7 +109,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
                           endpoint_publisher
         :type endpoints: list
         """
-        return ZMQSyncTarget(endpoints[0], endpoints[1])
+        return ZMQSyncTarget(endpoints)
 
     def get_sync_info(self, source_replica_uid):
         """
@@ -269,20 +264,8 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
             get_document_request=get_doc_req_struct)
         str_iden_get_doc_req = serialize_msg(iden_get_doc_req)
 
-        # Create SyncType message.
-        sync_type_struct = create_sync_type_msg(sync_type="sync-from")
-        iden_sync_type = proto.Identifier(type=proto.Identifier.SYNC_TYPE,
-                                          sync_type=sync_type_struct)
-        str_iden_sync_type = serialize_msg(iden_sync_type)
-
-        # Create ZMQVerb message
-        zmq_verb_struct = create_zmq_verb_msg(verb=proto.ZMQVerb.GET)
-        iden_zmq_verb = proto.Identifier(type=proto.Identifier.ZMQ_VERB,
-                                         zmq_verb=zmq_verb_struct)
-        str_iden_zmq_verb = serialize_msg(iden_zmq_verb)
-
-        # Frame 1: ZMQVerb; Frame 2: SyncType; Frame 3: GetDocumentRequest
-        to_send = [str_iden_zmq_verb, str_iden_sync_type, str_iden_get_doc_req]
+        # Frame 1: GetDocumentRequest
+        to_send = [str_iden_get_doc_req]
         self.speaker.send(to_send)
 
         # Frame 1: GetDocumentResponse
@@ -343,7 +326,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         self.speaker.send([str_iden_all_sent_req])
 
         # Frame 1: AllSentResponse
-        response = self.speaker.recv()[0]
+        response = self.speaker.recv()
         all_sent_resp_struct = parse_response(response, "all_sent_response")
 
         # TODO: What to do with all_sent_resp_struct.doc_info[] ; Maybe request
