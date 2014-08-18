@@ -326,7 +326,7 @@ class ZMQSyncTarget(ZMQClientBase, SyncTarget):
         self.speaker.send([str_iden_all_sent_req])
 
         # Frame 1: AllSentResponse
-        response = self.speaker.recv()
+        response = self.speaker.recv()[0]
         all_sent_resp_struct = parse_response(response, "all_sent_response")
 
         # TODO: What to do with all_sent_resp_struct.doc_info[] ; Maybe request

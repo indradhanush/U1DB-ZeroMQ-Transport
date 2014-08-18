@@ -35,6 +35,12 @@ class ZMQSynchronizer(Synchronizer):
         self._sync_step_validate_info_at_target()
         docs_by_generation = self._sync_step_find_changes_to_send(
             target_latest_generation, target_latest_trans_id)
+        if isinstance(docs_by_generation, int):
+            # Docs by generation was not returned.
+            # sync_target.source_current_gen has been returned here.
+            # See definition of _sync_step_find_changes_to_send. This
+            # was introduced because of splitting the _sync method.
+            return docs_by_generation
         source_current_gen = self._sync_step_sync_exchange(
             docs_by_generation, ensure_callback)
 
