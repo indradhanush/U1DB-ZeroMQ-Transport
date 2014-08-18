@@ -8,6 +8,7 @@ from threading import Lock
 from u1db.errors import (
     DatabaseDoesNotExist,
     InvalidReplicaUID,
+    InvalidGeneration,
     InvalidTransactionId
 )
 from leap.soledad.client.sync import SoledadSynchronizer as Synchronizer
@@ -63,7 +64,7 @@ class ZMQSynchronizer(Synchronizer):
                 # Never synced yet.
                 self.target_replica_uid = None
                 (target_latest_generation,
-                 target_latest_generation) = (0, "")
+                 target_latest_trans_id) = (0, "")
                 (sync_target.source_last_known_generation,
                  sync_target.source_last_known_trans_id) = (0, "")
 
@@ -77,14 +78,26 @@ class ZMQSynchronizer(Synchronizer):
         return target_latest_generation, target_latest_trans_id, ensure_callback
 
     def _sync_step_validate_info_at_target(self):
-        # Validate last known info about source present at target.
+        """
+        Internal implementation detail. Validates last known info about
+        source present at target.
+        """
         sync_target = self.sync_target
-        self.source.validate_gen_and_trans_id(
-            sync_target.source_last_known_generation,
-            sync_target.source_last_known_trans_id)
+        try:
+            self.source.validate_gen_and_trans_id(
+                sync_target.source_last_known_generation,
+                sync_target.source_last_known_trans_id)
+        except InvalidGeneration:
+            raise
+        except InvalidTransactionId:
+            raise
 
     def _sync_step_find_changes_to_send(self, target_latest_generation,
                                         target_latest_trans_id):
+        """
+        Internal implementation detail. Finds the changes to return to
+        the target.
+        """
         sync_target = self.sync_target
         # Find changes at source to send to target.
         (sync_target.source_current_gen,
@@ -121,7 +134,10 @@ class ZMQSynchronizer(Synchronizer):
         return docs_by_generation
 
     def _sync_step_sync_exchange(self, docs_by_generation, ensure_callback):
-        # sync_exchange
+        """
+        Internal implementation detail. Performs the sync_exchange part
+        of the entire sync.
+        """
         sync_target = self.sync_target
         try:
             # TODO: Returns the new target gen and trans_id but it is
