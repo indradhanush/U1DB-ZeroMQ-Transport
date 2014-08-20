@@ -51,4 +51,3 @@ if __name__ == '__main__':
 
     print "Creating %d files of size %d MB each..." % (n, size)
     generate_files(file_suffix, n, size)
-

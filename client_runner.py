@@ -13,15 +13,22 @@ from zmq_transport.client.sync import ZMQSynchronizer
 
 if __name__ == "__main__":
     import logging
-    logging.basicConfig()
+
 
     sync_client = ZMQSyncTarget([ENDPOINT_CLIENT_HANDLER,
-                                         ENDPOINT_PUBLISHER])
+                                 ENDPOINT_PUBLISHER])
 
     sync_client.set_user_id("USER-1")
-    sync_client.start()
 
-    source = u1db.open(os.path.join(DATABASE_ROOT, "source-USER-1.u1db"), create=False)
+    try:
+        import pdb
+        sync_client.start()
+    except UserIDNotSet as e:
+        print "Aborting:", e
+        sys.exit()
+
+    source = u1db.open(
+        os.path.join(DATABASE_ROOT, "source-USER-1.u1db"), create=False)
 
     synchronizer = ZMQSynchronizer(source, sync_client)
     import time
