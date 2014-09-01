@@ -7,7 +7,6 @@
 venv/
 database/
 htmlcov/
+dumps/
 
 show_db.py
-reset_env.py
-reset_env.sh

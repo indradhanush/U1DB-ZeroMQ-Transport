@@ -3,23 +3,10 @@ Common Utilities.
 """
 # System Imports
 import uuid
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
-# Protobuf Imports
-from google.protobuf.message import DecodeError
 
 # Local Imports
 from zmq_transport.common import message_pb2 as proto
-from zmq_transport.config.u1db_settings import (
-    TARGET_REPLICA_UID_KEY,
-    TARGET_REPLICA_GEN_KEY,
-    TARGET_REPLICA_TRANS_ID_KEY,
-    SOURCE_LAST_KNOWN_GEN_KEY,
-    SOURCE_LAST_KNOWN_TRANS_ID_KEY
-)
+
 
 ######################## Start of Protobuf utilities. ########################
 
@@ -357,8 +344,8 @@ def parse_response(response, attribute):
     """
     try:
         iden_struct = deserialize_msg("Identifier", response)
-    except DecodeError, e:
-        print "Expected response of type Identifier.", e
+    except TypeError:
+        raise TypeError("Expected response of type Identifier.")
     else:
         return getattr(iden_struct, attribute)
 
@@ -375,54 +362,4 @@ def get_sync_id():
     """
     return str(uuid.uuid4())
 
-
-def get_target_info():
-    """
-    Helper function to get the current target replica info.
-
-    :return: Target information.
-    :rtype: dict
-    """
-    info = {}
-    info[TARGET_REPLICA_UID_KEY] = str(uuid.uuid4())
-    info[TARGET_REPLICA_GEN_KEY] = 12
-    info[TARGET_REPLICA_TRANS_ID_KEY] = str(uuid.uuid4())
-
-    return info
-
-
-def get_source_info():
-    """
-    Helper function to get the the source replica information at the target.
-
-    :return: Source information.
-    :rtype: dict
-    """
-    info = {}
-    info[SOURCE_LAST_KNOWN_GEN_KEY] = 8
-    info[SOURCE_LAST_KNOWN_TRANS_ID_KEY] = str(uuid.uuid4())
-
-    return info
-
-
-def get_doc_info():
-    """
-    TODO: Should return information about a document. Arbit now.
-    """
-    doc_id = str(uuid.uuid4())
-    doc_rev = 5
-    doc_generation = 18
-    doc_content = {"data": "Random garbled text for simulation."}
-    doc_content = json.dumps(doc_content)
-    return (doc_id, doc_rev, doc_generation, doc_content)
-
-
-def get_source_replica_uid():
-    """
-    Helper funtion to return source_replica_uid.
-    """
-    # TODO: Implement functionality. Arbit now.
-    return "S-ID"
-
 ########################### End of U1DB utilities. ###########################
-

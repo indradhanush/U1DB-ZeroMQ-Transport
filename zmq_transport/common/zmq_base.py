@@ -19,7 +19,7 @@ class ZMQBaseSocket(object):
 
     def run(self):
         """
-        Base mehod that connects or binds a socket to self._endpoint.
+        Base method that connects or binds a socket to self._endpoint.
         Sub classes must override this method.
         """
         raise NotImplementedError(self.run)
@@ -39,8 +39,10 @@ class ZMQBaseSocket(object):
         :param callback: The callback method.
         :type callback: function
         """
-        assert isinstance(self._socket, ZMQStream), "Not a ZMQStream socket."
-        getattr(self._socket, method)(callback)
+        if isinstance(self._socket, ZMQStream):
+            getattr(self._socket, method)(callback)
+        else:
+            raise TypeError("Not a ZMQStream socket.")
 
     def send(self, msg):
         """
@@ -48,13 +50,16 @@ class ZMQBaseSocket(object):
 
         :param msg: Message to be sent.
         :type msg: list
+
+        :return: Return Value of send_multipart()
+        :rtype: None or MessageTracker
         """
         # Performing type checking as it is fairly easy to just send a
         # str in param msg.
         if not isinstance(msg, list):
             raise TypeError("param msg expected of <type 'list'>. Found %s."
                             % (type(msg)))
-        self._socket.send_multipart(msg)
+        return self._socket.send_multipart(msg)
 
     def recv(self):
         """
@@ -102,4 +107,3 @@ class ZMQBaseComponent(object):
         This method stops the component and makes for a clean exit.
         """
         raise NotImplementedError(self.stop)
-

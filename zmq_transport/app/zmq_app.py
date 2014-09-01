@@ -10,7 +10,10 @@ import pdb
 import zmq
 from zmq.eventloop.ioloop import IOLoop
 from u1db.remote import server_state
-from u1db.errors import InvalidTransactionId
+from u1db.errors import (
+    InvalidGeneration,
+    InvalidTransactionId
+)
 from u1db import Document
 from google.protobuf.message import DecodeError
 from leap.soledad.common import USER_DB_PREFIX
@@ -55,9 +58,7 @@ from zmq_transport.common.utils import (
     create_put_sync_info_response_msg,
 )
 from zmq_transport.common.errors import (
-    SyncError,
-    DocumentNotInCache,
-    SyncNotRegistered
+    SyncError
 )
 
 
@@ -101,6 +102,16 @@ class SeenDocsIndex(object):
         self.index[sync_id] = {}
 
     def update_seen_ids(self, sync_id, seen_ids):
+        """
+        Updates the index[sync_id] by adding doc_id and gen as a
+        key value pair.
+
+        :param sync_id: The sync_id to search the index.
+        :type sync_id: str
+        :param seen_ids: A dictionary containing the {doc_id: gen} of all
+                         the docs to be inserted into the index.
+        :type seen_ids: dict
+        """
         if self.index.get(sync_id) is None:
             raise SyncError(
               "No sync information available for sync_id:{0}".format(sync_id))
@@ -120,7 +131,7 @@ class SyncResource(object):
 
     def __init__(self, dbname, source_replica_uid, state):
         """
-        Initiallizes an object of type SyncResource.
+        Initializes an object of type SyncResource.
 
         :param dbname: Name of the database
         :type: str
@@ -195,7 +206,7 @@ class SyncResource(object):
 
     def insert_doc(self, id, rev, content, gen, trans_id):
         """
-        Applciation logic handler to insert a document into the target
+        Application logic handler to insert a document into the target
         sent from source. Invoked when send_doc_info is invoked on the
         source.
         Analogous to u1db.remote.http_app.SyncResource.post_stream_entry()
@@ -272,24 +283,7 @@ class ZMQAppSocket(ZMQBaseSocket):
     """
     Base class for sockets at SOLEDAD. Derived from ZMQBaseSocket.
     """
-    def __init__(self, socket, endpoint):
-        """
-        Initialize a ZMQAppSocket instance.
-
-        :param socket: ZeroMQ socket.
-        :type socket: zmq.Context.socket instance.
-        :param endpoint: Endpoint to bind or connect the socket to.
-        :type endpoint: str
-        """
-        ZMQBaseSocket.__init__(self, socket, endpoint)
-
-    def run(self):
-        """
-        Initiates socket connections. Base class implementations must over
-        ride this method.
-        """
-        raise NotImplementedError(self.run)
-
+    pass
 
 # TODO: zmq.DEALER socket for now. Maybe a PUSH/PULL combo later on.
 # See: IRC Log below -
@@ -442,7 +436,7 @@ class ZMQApp(ZMQBaseComponent):
         :type status: MessageTracker or None ; See: http://zeromq.github.io/pyzmq/api/generated/zmq.eventloop.zmqstream.html#zmq.eventloop.zmqstream.ZMQStream.on_send
         """
         # TODO: Maybe do some application logging here.
-        print "<APPLICATION> Sent: ", msg
+        pass
 
     def handle_rcv_update(self, msg):
         """
@@ -451,8 +445,6 @@ class ZMQApp(ZMQBaseComponent):
         :param msg: Raw Message received.
         :type msg: list
         """
-        print "<APPLICATION> Received: ", msg
-
         # Message Format: [str_client_info, msg]
         str_client_info, msg = msg[0], msg[1:]
 
@@ -530,7 +522,8 @@ class ZMQApp(ZMQBaseComponent):
             return None
 
         sync_resource = self._prepare_u1db_sync_resource(
-            get_sync_info_struct.user_id, get_sync_info_struct.source_replica_uid)
+            get_sync_info_struct.user_id,
+            get_sync_info_struct.source_replica_uid)
 
         kwargs = sync_resource.get()
         # TODO: Decide about sending source_replica_uid in
@@ -554,9 +547,13 @@ class ZMQApp(ZMQBaseComponent):
 
         try:
             sync_resource.prepare_for_sync_exchange(
-                last_known_generation=send_doc_req_struct.target_last_known_generation,
-                last_known_trans_id=send_doc_req_struct.target_last_known_trans_id)
-
+                send_doc_req_struct.target_last_known_generation,
+                send_doc_req_struct.target_last_known_trans_id
+            )
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -609,6 +606,10 @@ class ZMQApp(ZMQBaseComponent):
                     all_sent_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     all_sent_req_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -651,6 +652,10 @@ class ZMQApp(ZMQBaseComponent):
                     get_doc_req_struct.target_last_known_generation,
                 last_known_trans_id=\
                     get_doc_req_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
@@ -678,8 +683,6 @@ class ZMQApp(ZMQBaseComponent):
         :return: PutSyncInfoResponse message wrapped in an Identifier message.
         :rtype: zmq_transport.common.message_pb2.Identifier
         """
-        # TODO: Do some db transaction here.
-
         sync_resource = self._prepare_u1db_sync_resource(
             put_sync_info_struct.user_id,
             put_sync_info_struct.source_replica_uid)
@@ -688,6 +691,10 @@ class ZMQApp(ZMQBaseComponent):
             sync_resource.prepare_for_sync_exchange(
                 put_sync_info_struct.target_last_known_generation,
                 put_sync_info_struct.target_last_known_trans_id)
+        except InvalidGeneration as e:
+            # TODO: Maybe send a custom Error Message to client.
+            print e
+            return None
         except InvalidTransactionId as e:
             # TODO: Maybe send a custom Error Message to client.
             print e
