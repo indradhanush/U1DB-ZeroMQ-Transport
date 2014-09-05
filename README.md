@@ -31,6 +31,12 @@ a very good article on it [here](http://nvie.com/posts/a-successful-git-branchin
 * ```cd U1DB-ZeroMQ-Transport```
 * ```virtualenv venv```
 * ```source venv/bin/activate```
+* __NOTE:__ Before you run the next step, pip 1.5 has broken the
+  install of `u1db`, which is one of the dependencies. So to install
+  it, you need to run the following command first and then move on
+  (Sorry for the hassle until this is fixed):
+* ```pip install --allow-external u1db --allow-unverified u1db
+  --allow-external dirspec --allow-unverified dirspec u1db```
 * ```pip install -r requirements.txt```
 * Send a PR!
 * Please make sure you are also adding the relevant tests and make
