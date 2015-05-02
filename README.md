@@ -44,12 +44,7 @@ a very good article on it [here](http://nvie.com/posts/a-successful-git-branchin
 
 ##Running the tests##
 
-Run ```python -m unittest discover``` from the project root.
-
-Note: ```zmq_trasnport.tests.app.test_zmq_app.SyncResourceTest.test_insert_doc```
-is likely to fail. This is not a bug in the code. The error,
-```InvalidGeneration``` is raised because of previous tests. Ideally
-these tests, including this one should be redone using Mocks.
+Run ```./run_tests.sh``` from the project root.
 
 ##Running benchmarks##
 
