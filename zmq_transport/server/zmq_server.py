@@ -5,9 +5,7 @@ ZeroMQ Server.
 
 import zmq
 from zmq.eventloop.ioloop import IOLoop
-
 from zmq_transport.config.protobuf_settings import MSG_TYPE_PING
-
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common.utils import serialize_msg
 from zmq_transport.common.utils import deserialize_msg
