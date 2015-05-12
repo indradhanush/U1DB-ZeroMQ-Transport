@@ -1,15 +1,12 @@
 # ZeroMQ Imports
 import zmq
-from zmq.eventloop.zmqstream import ZMQStream
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 # Local Imports
-from zmq_transport.config import settings
 from zmq_transport.common.zmq_base import ZMQBaseSocket, ZMQBaseComponent
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import (
     serialize_msg,
-    deserialize_msg,
     create_subscribe_request_msg
 )
 
