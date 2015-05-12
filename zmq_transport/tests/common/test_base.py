@@ -8,7 +8,6 @@ import unittest
 # ZeroMQ Imports
 import zmq
 from zmq.eventloop.zmqstream import ZMQStream
-from zmq.eventloop.ioloop import IOLoop
 
 # Local Imports
 from zmq_transport.common.zmq_base import (

@@ -4,12 +4,10 @@ Application/Tier 1 Implementation
 # System Imports
 from itertools import izip
 import functools
-import pdb
 
 # Project dependency imports
 import zmq
 from zmq.eventloop.ioloop import IOLoop
-from u1db.remote import server_state
 from u1db.errors import (
     InvalidGeneration,
     InvalidTransactionId

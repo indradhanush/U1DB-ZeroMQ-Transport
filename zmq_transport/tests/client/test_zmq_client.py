@@ -5,16 +5,12 @@ Test module for zmq_transport.client.zmq_client
 import unittest
 
 # Dependencies' imports
-from mock import (
-    patch
-)
 import zmq
 from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
 # Local imports
 from zmq_transport.client.zmq_client import (
-    ClientSocket,
     Speaker,
     ZMQClientBase,
     Subscriber

@@ -8,7 +8,6 @@ import unittest
 
 # Dependencies' imports
 from mock import (
-    patch,
     MagicMock,
     Mock
 )
@@ -28,7 +27,6 @@ from zmq_transport.config.settings import (
     ENDPOINT_PUBLISHER,
     DATABASE_ROOT
 )
-from zmq_transport.common.utils import get_sync_id
 
 
 class BaseSynchronizerTest(unittest.TestCase):

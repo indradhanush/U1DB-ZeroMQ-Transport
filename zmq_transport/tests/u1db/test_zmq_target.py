@@ -7,7 +7,6 @@ import unittest
 
 # Dependencies' imports
 from mock import (
-    patch,
     Mock,
     MagicMock
 )
@@ -17,7 +16,6 @@ from zmq_transport.u1db import zmq_target
 from zmq_transport.u1db.zmq_target import (
     ZMQSyncTarget
 )
-from zmq_transport.client.zmq_client import ZMQClientBase
 from zmq_transport.config.settings import (
     ENDPOINT_CLIENT_HANDLER,
     ENDPOINT_PUBLISHER

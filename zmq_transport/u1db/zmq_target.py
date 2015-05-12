@@ -1,17 +1,12 @@
 """
 SyncTarget API implementation to a remote ZMQ server.
 """
-# System Imports
-import sys
-
 # Local Imports
 from zmq_transport.client.zmq_client import ZMQClientBase
 from zmq_transport.common.errors import UserIDNotSet
 from zmq_transport.common import message_pb2 as proto
 from zmq_transport.common.utils import (
     serialize_msg,
-    create_zmq_verb_msg,
-    create_sync_type_msg,
     create_get_sync_info_request_msg,
     create_put_sync_info_request_msg,
     create_send_document_request_msg,
