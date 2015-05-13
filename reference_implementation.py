@@ -9,7 +9,6 @@ import threading
 # Dependencies' imports
 import u1db
 from u1db.commandline.serve import make_server
-from u1db.remote.http_database import HTTPDatabase
 
 # Local imports
 from reset_env import BASE_DB_PATH
