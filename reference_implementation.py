@@ -29,7 +29,7 @@ class ServerThread(threading.Thread):
 
     def stop(self):
         if self.isAlive():
-            self.server.server_close()
+            self.server.shutdown()
             self.join()
 
 
