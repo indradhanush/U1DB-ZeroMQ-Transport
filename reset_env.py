@@ -1,6 +1,7 @@
 # System imports
 import os
 import binascii
+import time
 
 # Dependencies' imports
 import u1db
@@ -54,7 +55,6 @@ if __name__ == "__main__":
     target_path = os.path.join(BASE_FILE_PATH, "target")
 
     # TODO: Use timeit for more accurate times.
-    import time
     start = time.time()
     create_and_write("source-USER-1.u1db", source_path)
     print time.time() - start
