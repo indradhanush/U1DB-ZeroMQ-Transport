@@ -1,10 +1,10 @@
 ZeroMQ Transport For U1DB Sync Protocol
 ==========================================
 
-This is my Google Summer of Code - 14 project  with
+This is my Google Summer of Code - 2014 project  with
 [LEAP Encryption Access Project](http://leap.se/).
 
-You may read the original proposal [here](http://www.google-melange.com/gsoc/proposal/public/google/gsoc2014/indradhanush/5668600916475904).
+You may read the original proposal [here](http://bit.ly/gsocleap14).
 
 ##Contributing##
 
